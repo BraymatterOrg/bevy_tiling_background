@@ -2,7 +2,9 @@ use bevy::app::App;
 use bevy::asset::Assets;
 use bevy::prelude::{AssetServer, Camera2dBundle, Commands, Mesh, ResMut};
 use bevy::DefaultPlugins;
-use bevy_tiling_background::{BackgroundImageBundle, BackgroundMaterial, TilingBackgroundPlugin};
+use bevy_tiling_background::{
+    BackgroundImageBundle, BackgroundMaterial, SetImageRepeatingExt, TilingBackgroundPlugin,
+};
 
 pub fn main() {
     App::new()
@@ -19,6 +21,9 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     commands.spawn(Camera2dBundle::default());
+
+    let image = asset_server.load("test.png");
+    commands.set_image_repeating(image);
     commands.spawn(BackgroundImageBundle::from_image(
         asset_server.load("test.png"),
         materials.as_mut(),
