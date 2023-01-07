@@ -4,7 +4,7 @@ use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 929599476923908);
+    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
 #[derive(Default)]
 pub struct TilingBackgroundPlugin;
