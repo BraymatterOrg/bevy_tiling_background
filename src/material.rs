@@ -1,3 +1,4 @@
+use crate::TILED_BG_SHADER_HANDLE;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
@@ -13,7 +14,7 @@ pub struct TilingBackgroundMaterial {
 
 impl Material2d for TilingBackgroundMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders/background.wgsl".into()
+        TILED_BG_SHADER_HANDLE.typed().into()
     }
 }
 
