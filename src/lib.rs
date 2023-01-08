@@ -29,7 +29,9 @@ impl Plugin for TilingBackgroundPlugin {
         );
         app.add_plugin(Material2dPlugin::<BackgroundMaterial>::default())
             .insert_resource(UpdateSamplerRepeating::default())
-            .add_system(on_window_resize)
+            .add_system_to_stage(CoreStage::PostUpdate, on_window_resize)
+            .add_system_to_stage(CoreStage::PostUpdate, follow_camera)
+            .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
             .add_system(queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
     }
@@ -40,9 +42,11 @@ impl Plugin for TilingBackgroundPlugin {
 pub struct BackgroundMaterial {
     /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
     /// [`AddressMode::Repeat`].
-    #[texture(0)]
-    #[sampler(1)]
-    pub(crate) texture: Handle<Image>,
+    #[uniform(0)]
+    pub movement_scale: f32,
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
 }
 
 impl Material2d for BackgroundMaterial {
@@ -80,7 +84,8 @@ fn update_sampler_on_loaded_system(
     for (index, handle) in handles {
         match asset_server.get_load_state(&handle) {
             LoadState::Failed => {
-                // one of our assets had an error
+                // Failed to load, don't need to keep checking it
+                update_sampler.0.remove(index);
             }
             LoadState::Loaded => {
                 let mut bg_texture = images
@@ -110,6 +115,18 @@ fn update_sampler_on_loaded_system(
     }
 }
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct BackgroundMovementScale {
+    pub scale: f32,
+}
+
+impl Default for BackgroundMovementScale {
+    fn default() -> Self {
+        Self { scale: 0.15 }
+    }
+}
+
 #[derive(Bundle)]
 pub struct BackgroundImageBundle {
     pub material: Handle<BackgroundMaterial>,
@@ -118,6 +135,7 @@ pub struct BackgroundImageBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
+    pub movement_scale: BackgroundMovementScale,
 }
 
 impl BackgroundImageBundle {
@@ -127,7 +145,10 @@ impl BackgroundImageBundle {
         meshes: &mut Assets<Mesh>,
     ) -> Self {
         Self {
-            material: background_materials.add(BackgroundMaterial { texture: image }),
+            material: background_materials.add(BackgroundMaterial {
+                texture: image,
+                movement_scale: 1.0,
+            }),
             mesh: meshes
                 .add(Mesh::from(shape::Quad {
                     size: Vec2 { x: 1., y: 1. },
@@ -138,7 +159,13 @@ impl BackgroundImageBundle {
             global_transform: Default::default(),
             visibility: Default::default(),
             computed_visibility: Default::default(),
+            movement_scale: Default::default(),
         }
+    }
+
+    pub fn with_movement_scale(mut self, scale: f32) -> Self {
+        self.movement_scale.scale = scale;
+        self
     }
 }
 
@@ -175,4 +202,29 @@ pub fn on_window_resize(
             transform.scale.y = ev.height;
         }
     });
+}
+
+pub fn follow_camera(
+    mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
+    cameras: Query<&GlobalTransform, With<Camera>>,
+) {
+    for mut transform in backgrounds.iter_mut() {
+        let camera = cameras.get_single().expect("Currently only one camera is supported by bevy_tiling_background. Contributions welcome!");
+        transform.translation.y = camera.translation().y;
+        transform.translation.x = camera.translation().x;
+    }
+}
+
+pub fn update_movement_scale_system(
+    mut query: Query<
+        (&mut Handle<BackgroundMaterial>, &BackgroundMovementScale),
+        Changed<BackgroundMovementScale>,
+    >,
+    mut background_materials: ResMut<Assets<BackgroundMaterial>>,
+) {
+    for (bg_material_handle, scale) in query.iter_mut() {
+        if let Some(background_material) = background_materials.get_mut(&*bg_material_handle) {
+            background_material.movement_scale = scale.scale;
+        }
+    }
 }

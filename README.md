@@ -1,4 +1,4 @@
-An in progress (currently non-functioning) plugin for the Bevy game engine to support tiling backgrounds.
+An in progress (expect breaking changes) plugin for the Bevy game engine to support tiling backgrounds.
 
 Use `cargo run --example tiling` to see the example.
 
