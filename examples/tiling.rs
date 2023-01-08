@@ -24,9 +24,9 @@ pub fn setup(
 
     let image = asset_server.load("test.png");
     // Queue a command to set the image to be repeating once the image is loaded.
-    commands.set_image_repeating(image);
+    commands.set_image_repeating(image.clone());
     commands.spawn(BackgroundImageBundle::from_image(
-        asset_server.load("test.png"),
+        image,
         materials.as_mut(),
         meshes.as_mut(),
     ));

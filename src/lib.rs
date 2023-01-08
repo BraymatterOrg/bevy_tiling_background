@@ -3,10 +3,19 @@ mod material;
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::ecs::system::Command;
+use bevy::prelude::*;
+use bevy::reflect::TypeUuid;
+use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor, ShaderRef};
+use bevy::render::texture::ImageSampler;
+use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
+use bevy::window::WindowResized;
 
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
+/// Bevy plugin for tiling backgrounds.
+///
+/// Insert after Bevy's DefaultPlugins.
 #[derive(Default)]
 pub struct TilingBackgroundPlugin;
 
@@ -25,13 +34,6 @@ impl Plugin for TilingBackgroundPlugin {
             .add_system(update_sampler_on_loaded_system);
     }
 }
-
-use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
-use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor, ShaderRef};
-use bevy::render::texture::ImageSampler;
-use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
-use bevy::window::WindowResized;
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
@@ -168,10 +170,9 @@ pub fn on_window_resize(
     mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
 ) {
     events.iter().for_each(|ev| {
-        let window_size = Vec2::new(ev.width, ev.height);
         for mut transform in backgrounds.iter_mut() {
-            transform.scale.x = window_size.x;
-            transform.scale.y = window_size.y;
+            transform.scale.x = ev.width;
+            transform.scale.y = ev.height;
         }
     });
 }
