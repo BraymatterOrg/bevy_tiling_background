@@ -68,6 +68,7 @@ fn queue_update_sampler(
     }
 }
 
+///Polls the update_sampler resource and swaps the asset's sampler out for a repeating sampler
 fn update_sampler_on_loaded_system(
     asset_server: Res<AssetServer>,
     mut update_sampler: ResMut<UpdateSamplerRepeating>,
@@ -167,6 +168,12 @@ impl BackgroundImageBundle {
         self.movement_scale.scale = scale;
         self
     }
+
+    pub fn at_z_layer(mut self, z: f32) -> Self{
+        self.transform.translation.z = z;
+        self
+    }
+
 }
 
 struct SetImageRepeatingCommand {
