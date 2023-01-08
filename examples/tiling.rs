@@ -23,6 +23,7 @@ pub fn setup(
     commands.spawn(Camera2dBundle::default());
 
     let image = asset_server.load("test.png");
+    // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image);
     commands.spawn(BackgroundImageBundle::from_image(
         asset_server.load("test.png"),

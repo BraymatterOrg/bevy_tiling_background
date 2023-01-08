@@ -20,6 +20,7 @@ impl Plugin for TilingBackgroundPlugin {
         );
         app.add_plugin(Material2dPlugin::<BackgroundMaterial>::default())
             .insert_resource(UpdateSamplerRepeating::default())
+            .add_system(on_window_resize)
             .add_system(queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
     }
@@ -30,6 +31,7 @@ use bevy::reflect::TypeUuid;
 use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor, ShaderRef};
 use bevy::render::texture::ImageSampler;
 use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
+use bevy::window::WindowResized;
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
@@ -126,7 +128,7 @@ impl BackgroundImageBundle {
             material: background_materials.add(BackgroundMaterial { texture: image }),
             mesh: meshes
                 .add(Mesh::from(shape::Quad {
-                    size: Vec2 { x: 1600., y: 1600. },
+                    size: Vec2 { x: 1., y: 1. },
                     ..default()
                 }))
                 .into(),
@@ -159,4 +161,17 @@ impl<'w, 's> SetImageRepeatingExt for Commands<'w, 's> {
     fn set_image_repeating(&mut self, image: Handle<Image>) {
         self.add(SetImageRepeatingCommand { image })
     }
+}
+
+pub fn on_window_resize(
+    mut events: EventReader<WindowResized>,
+    mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
+) {
+    events.iter().for_each(|ev| {
+        let window_size = Vec2::new(ev.width, ev.height);
+        for mut transform in backgrounds.iter_mut() {
+            transform.scale.x = window_size.x;
+            transform.scale.y = window_size.y;
+        }
+    });
 }
