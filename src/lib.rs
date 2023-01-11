@@ -1,5 +1,3 @@
-mod material;
-
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::ecs::system::Command;
@@ -169,11 +167,10 @@ impl BackgroundImageBundle {
         self
     }
 
-    pub fn at_z_layer(mut self, z: f32) -> Self{
+    pub fn at_z_layer(mut self, z: f32) -> Self {
         self.transform.translation.z = z;
         self
     }
-
 }
 
 struct SetImageRepeatingCommand {
