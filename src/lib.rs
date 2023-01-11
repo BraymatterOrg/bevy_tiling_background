@@ -27,8 +27,8 @@ impl Plugin for TilingBackgroundPlugin {
         );
         app.add_plugin(Material2dPlugin::<BackgroundMaterial>::default())
             .insert_resource(UpdateSamplerRepeating::default())
+            .register_type::<BackgroundMovementScale>()
             .add_system_to_stage(CoreStage::PostUpdate, on_window_resize)
-            .add_system_to_stage(CoreStage::PostUpdate, follow_camera)
             .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
             .add_system(queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
@@ -206,17 +206,6 @@ pub fn on_window_resize(
             transform.scale.y = ev.height;
         }
     });
-}
-
-pub fn follow_camera(
-    mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
-    cameras: Query<&GlobalTransform, With<Camera>>,
-) {
-    for mut transform in backgrounds.iter_mut() {
-        let camera = cameras.get_single().expect("Currently only one camera is supported by bevy_tiling_background. Contributions welcome!");
-        transform.translation.y = camera.translation().y;
-        transform.translation.x = camera.translation().x;
-    }
 }
 
 pub fn update_movement_scale_system(

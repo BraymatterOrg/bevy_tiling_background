@@ -4,6 +4,11 @@ use bevy_tiling_background::{
     TilingBackgroundPlugin,
 };
 
+/// Bevy doesn't render things that are attached to the camera, so this component will be used
+/// on a parent entity to move our camera and background.
+#[derive(Component)]
+pub struct CameraRig;
+
 pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -20,16 +25,20 @@ pub fn setup(
     mut materials: ResMut<Assets<BackgroundMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
-
     let image = asset_server.load("test.png");
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image.clone());
-    commands.spawn(BackgroundImageBundle::from_image(
-        image,
-        materials.as_mut(),
-        meshes.as_mut(),
-    ).at_z_layer(0.1));
+
+    // Spawn camera rig with camera and background as children
+    commands
+        .spawn((CameraRig, SpatialBundle::default()))
+        .with_children(|child_builder| {
+            child_builder.spawn(Camera2dBundle::default());
+            child_builder.spawn(
+                BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
+                    .at_z_layer(0.1),
+            );
+        });
 
     // Instructions
     commands.spawn((
@@ -43,34 +52,41 @@ pub fn setup(
             },
         ),
         Instructions,
+        Name::new("Instructions"),
     ));
 
     // Boxes as a simple environment to compare background movement to.
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::DARK_GREEN,
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::DARK_GREEN,
+                ..default()
+            },
+            transform: Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
+                .with_translation(Vec3::new(0.0, -50.0, 1.0)),
             ..default()
         },
-        transform: Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
-            .with_translation(Vec3::new(0.0, -50.0, 1.0)),
-        ..default()
-    });
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::RED,
+        Name::new("Green Box (Ground)"),
+    ));
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::RED,
+                ..default()
+            },
+            transform: Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))
+                .with_translation(Vec3::new(0.0, 50.0, 1.0)),
             ..default()
         },
-        transform: Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))
-            .with_translation(Vec3::new(0.0, 50.0, 1.0)),
-        ..default()
-    });
+        Name::new("Red Box"),
+    ));
 }
 
 #[derive(Component)]
 struct Instructions;
 
 fn movement(
-    mut camera: Query<&mut Transform, With<Camera>>,
+    mut camera: Query<&mut Transform, With<CameraRig>>,
     mut background_scales: Query<&mut BackgroundMovementScale>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
