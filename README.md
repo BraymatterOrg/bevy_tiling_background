@@ -8,7 +8,7 @@ Supports Parallax, Layered, Tiling backgrounds and makes them easy to add in bev
 
 | bevy | bevy_tiling_background |
 |------|------------------------|
-| 0.9  | 0.1                    |
+| 0.9  | 0.9                    |
 
 ### License
 Copyright 2023 BrayMatter LLC
