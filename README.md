@@ -4,11 +4,7 @@ Use `cargo run --example tiling` to see the example.
 
 Supports Parallax, Layered, Tiling backgrounds and makes them easy to add in bevy. 
 
-
-
-https://user-images.githubusercontent.com/77391373/212492378-169c6043-32f0-491e-a864-619fd695e88f.mp4
-
-
+![bevy_tiling](https://user-images.githubusercontent.com/77391373/212493042-b3bd2f07-7238-42e0-ae35-edec0157eee7.gif)
 
 ### Compatible Versions
 
