@@ -1,3 +1,4 @@
+
 use bevy::prelude::*;
 use bevy_tiling_background::{
     BackgroundImageBundle, BackgroundMaterial, BackgroundMovementScale, SetImageRepeatingExt,
@@ -12,12 +13,12 @@ pub struct CameraRig;
 pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(TilingBackgroundPlugin)
+        .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
         .add_startup_system(setup)
         .add_system(movement)
         .add_system(update_instructions)
         .run()
-}
+} 
 
 pub fn setup(
     mut commands: Commands,

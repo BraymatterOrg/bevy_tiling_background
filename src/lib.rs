@@ -1,3 +1,6 @@
+use std::hash::Hash;
+use std::marker::PhantomData;
+
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::ecs::system::Command;
@@ -7,25 +10,27 @@ use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor,
 use bevy::render::texture::ImageSampler;
 use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
 use bevy::window::WindowResized;
-
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
 /// Bevy plugin for tiling backgrounds.
 ///
 /// Insert after Bevy's DefaultPlugins.
-#[derive(Default)]
-pub struct TilingBackgroundPlugin;
+#[derive(Default, TypeUuid)]
+#[uuid="14268b6c-927e-41e3-affe-410e7609a3fa"]
+pub struct TilingBackgroundPlugin< T: AsBindGroup + Send + Sync + Clone + TypeUuid + Sized + 'static >{
+    _phantom: PhantomData<T>
+}
 
-impl Plugin for TilingBackgroundPlugin {
-    fn build(&self, app: &mut App) {
+impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> where T::Data: Clone+ Eq + Send + Sync + Clone + TypeUuid + Sized + Hash {
+    fn build(&self, app: &mut App){
         load_internal_asset!(
             app,
             TILED_BG_SHADER_HANDLE,
             "shaders/background.wgsl",
             Shader::from_wgsl
         );
-        app.add_plugin(Material2dPlugin::<BackgroundMaterial>::default())
+        app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
             .register_type::<BackgroundMovementScale>()
             .add_system_to_stage(CoreStage::PostUpdate, on_window_resize)
@@ -36,7 +41,15 @@ impl Plugin for TilingBackgroundPlugin {
     }
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
+impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as AsBindGroup>::Data: Clone+ Eq + Send + Sync + Clone + TypeUuid + Sized + Hash {
+    pub fn new() -> Self{
+        TilingBackgroundPlugin::<T>{
+            _phantom: PhantomData{}
+        }
+    }
+}
+
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
 pub struct BackgroundMaterial {
     /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
@@ -125,6 +138,10 @@ impl Default for BackgroundMovementScale {
     fn default() -> Self {
         Self { scale: 0.15 }
     }
+}
+
+pub struct CustomBackgroundBundle<T: Material2d>{
+    pub material: Handle<T>
 }
 
 #[derive(Bundle)]
