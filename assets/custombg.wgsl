@@ -2,9 +2,13 @@
 #import bevy_sprite::mesh2d_bindings
 #import bevy_sprite::mesh2d_functions
 #import bevy_pbr::utils
+
+
 #import braymatter::bglib
+
 struct Uniforms {
     scale: f32,
+    blend_color: vec4<f32>
 };
 
 @group(1) @binding(0)
@@ -21,7 +25,7 @@ fn fragment(
 ) -> @location(0) vec4<f32> {
     let scale = uniforms.scale;
     let offset = mesh2d_position_world_to_clip(vec4<f32>(view.world_position.xy, 0.0, 0.0)).xy;
-    let color = scroll(texture, texture_sampler, scale, uv, offset);
+    let color = scroll(texture, texture_sampler, scale, uv, offset) + uniforms.blend_color;
     return color;
 }
 

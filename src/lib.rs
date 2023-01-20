@@ -13,6 +13,9 @@ use bevy::window::WindowResized;
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
+const BGLIB_HANDLE: HandleUntyped =
+    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
+
 /// Bevy plugin for tiling backgrounds.
 ///
 /// Insert after Bevy's DefaultPlugins.
@@ -31,12 +34,19 @@ impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> w
             Shader::from_wgsl
         );
         
+        load_internal_asset!(
+            app,
+            BGLIB_HANDLE,
+            "shaders/bglib.wgsl",
+            Shader::from_wgsl
+        );
+
         app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
             .register_type::<BackgroundMovementScale>()
             .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
             .add_system(Self::on_background_added)
-            .add_system(queue_update_sampler)
+            .add_system(Self::queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
     }
 }
@@ -71,6 +81,15 @@ impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as 
             }
         };
     }
+
+    fn queue_update_sampler(
+        query: Query<&Handle<Image>, Added<Handle<T>>>,
+        mut update_samplers: ResMut<UpdateSamplerRepeating>,
+    ) {
+        for handle in query.iter() {
+            update_samplers.0.push(handle.clone());
+        }
+    }
 }
 
 
@@ -96,14 +115,7 @@ impl Material2d for BackgroundMaterial {
 #[derive(Resource, Default)]
 struct UpdateSamplerRepeating(Vec<Handle<Image>>);
 
-fn queue_update_sampler(
-    query: Query<&Handle<Image>, Added<Handle<BackgroundMaterial>>>,
-    mut update_samplers: ResMut<UpdateSamplerRepeating>,
-) {
-    for handle in query.iter() {
-        update_samplers.0.push(handle.clone());
-    }
-}
+
 
 ///Polls the update_sampler resource and swaps the asset's sampler out for a repeating sampler
 fn update_sampler_on_loaded_system(
@@ -165,6 +177,7 @@ impl Default for BackgroundMovementScale {
     }
 }
 
+#[derive(Bundle)]
 pub struct CustomBackgroundImageBundle<T: Material2d>{
     pub material: Handle<T>,
     pub mesh: Mesh2dHandle,
@@ -175,6 +188,28 @@ pub struct CustomBackgroundImageBundle<T: Material2d>{
     pub movement_scale: BackgroundMovementScale,
 }
 
+impl<T: Material2d> CustomBackgroundImageBundle<T>{
+    pub fn with_material(
+        material: T,
+        materials: &mut Assets<T>,
+        meshes: &mut Assets<Mesh>,
+    ) -> Self {
+        Self {
+            material: materials.add(material),
+            mesh: meshes
+                .add(Mesh::from(shape::Quad {
+                    size: Vec2 { x: 1., y: 1. },
+                    ..default()
+                }))
+                .into(),
+            transform: Default::default(),
+            global_transform: Default::default(),
+            visibility: Default::default(),
+            computed_visibility: Default::default(),
+            movement_scale: Default::default(),
+        }
+    }
+}
 #[derive(Bundle)]
 pub struct BackgroundImageBundle {
     pub material: Handle<BackgroundMaterial>,
