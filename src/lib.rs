@@ -20,26 +20,25 @@ const BGLIB_HANDLE: HandleUntyped =
 ///
 /// Insert after Bevy's DefaultPlugins.
 #[derive(Default, TypeUuid)]
-#[uuid="14268b6c-927e-41e3-affe-410e7609a3fa"]
-pub struct TilingBackgroundPlugin< T: AsBindGroup + Send + Sync + Clone + TypeUuid + Sized + 'static >{
-    _phantom: PhantomData<T>
+#[uuid = "14268b6c-927e-41e3-affe-410e7609a3fa"]
+pub struct TilingBackgroundPlugin<T: AsBindGroup + Send + Sync + Clone + TypeUuid + Sized + 'static>
+{
+    _phantom: PhantomData<T>,
 }
 
-impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> where T::Data: Clone+ Eq + Send + Sync + Clone + Sized + Hash {
-    fn build(&self, app: &mut App){
+impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T>
+where
+    T::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
+{
+    fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,
             TILED_BG_SHADER_HANDLE,
             "shaders/background.wgsl",
             Shader::from_wgsl
         );
-        
-        load_internal_asset!(
-            app,
-            BGLIB_HANDLE,
-            "shaders/bglib.wgsl",
-            Shader::from_wgsl
-        );
+
+        load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
 
         app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
@@ -51,17 +50,20 @@ impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> w
     }
 }
 
-impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as AsBindGroup>::Data: Clone+ Eq + Send + Sync + Clone  + Sized + Hash {
-    pub fn new() -> Self{
-        TilingBackgroundPlugin::<T>{
-            _phantom: PhantomData{}
+impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T>
+where
+    <T as AsBindGroup>::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
+{
+    pub fn new() -> Self {
+        TilingBackgroundPlugin::<T> {
+            _phantom: PhantomData {},
         }
     }
 
-    pub fn on_window_resize (
+    pub fn on_window_resize(
         mut events: EventReader<WindowResized>,
         mut backgrounds: Query<&mut Transform, With<Handle<T>>>,
-    ){
+    ) {
         events.iter().for_each(|ev| {
             for mut transform in backgrounds.iter_mut() {
                 transform.scale.x = ev.width;
@@ -69,7 +71,7 @@ impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as 
             }
         });
     }
-    
+
     pub fn on_background_added(
         windows: Res<Windows>,
         mut backgrounds: Query<&mut Transform, Added<Handle<T>>>,
@@ -92,7 +94,6 @@ impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as 
     }
 }
 
-
 #[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
 pub struct BackgroundMaterial {
@@ -114,8 +115,6 @@ impl Material2d for BackgroundMaterial {
 /// A queue of images that need their sampler updated when they are loaded.
 #[derive(Resource, Default)]
 struct UpdateSamplerRepeating(Vec<Handle<Image>>);
-
-
 
 ///Polls the update_sampler resource and swaps the asset's sampler out for a repeating sampler
 fn update_sampler_on_loaded_system(
@@ -178,7 +177,7 @@ impl Default for BackgroundMovementScale {
 }
 
 #[derive(Bundle)]
-pub struct CustomBackgroundImageBundle<T: Material2d>{
+pub struct CustomBackgroundImageBundle<T: Material2d> {
     pub material: Handle<T>,
     pub mesh: Mesh2dHandle,
     pub transform: Transform,
@@ -188,7 +187,7 @@ pub struct CustomBackgroundImageBundle<T: Material2d>{
     pub movement_scale: BackgroundMovementScale,
 }
 
-impl<T: Material2d> CustomBackgroundImageBundle<T>{
+impl<T: Material2d> CustomBackgroundImageBundle<T> {
     pub fn with_material(
         material: T,
         materials: &mut Assets<T>,

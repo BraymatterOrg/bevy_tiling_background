@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 use bevy_tiling_background::{
     BackgroundImageBundle, BackgroundMaterial, BackgroundMovementScale, SetImageRepeatingExt,
@@ -18,10 +17,9 @@ pub fn main() {
         .add_system(movement)
         .add_system(update_instructions)
         .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
-
         .run()
-} 
- 
+}
+
 pub fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,

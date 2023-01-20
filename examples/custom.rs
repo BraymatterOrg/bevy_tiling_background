@@ -1,8 +1,11 @@
-
-use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, reflect::TypeUuid, sprite::Material2d};
+use bevy::{
+    prelude::*,
+    reflect::TypeUuid,
+    render::render_resource::{AsBindGroup, ShaderRef},
+    sprite::Material2d,
+};
 use bevy_tiling_background::{
-    SetImageRepeatingExt,
-    TilingBackgroundPlugin, CustomBackgroundImageBundle,
+    CustomBackgroundImageBundle, SetImageRepeatingExt, TilingBackgroundPlugin,
 };
 
 /// Bevy doesn't render things that are attached to the camera, so this component will be used
@@ -17,7 +20,7 @@ pub fn main() {
         .add_startup_system(setup)
         .add_system(movement)
         .run()
-} 
+}
 
 pub fn setup(
     mut commands: Commands,
@@ -29,11 +32,11 @@ pub fn setup(
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image.clone());
 
-    //Set up a material 
-    let custom_mat = CustomMaterial{
-      movement_scale: 0.15,
-      texture: image,
-      blend_color: Color::CRIMSON
+    //Set up a material
+    let custom_mat = CustomMaterial {
+        movement_scale: 0.15,
+        texture: image,
+        blend_color: Color::CRIMSON,
     };
 
     // Spawn camera rig with camera and background as children
@@ -41,9 +44,11 @@ pub fn setup(
         .spawn((CameraRig, SpatialBundle::default()))
         .with_children(|child_builder| {
             child_builder.spawn(Camera2dBundle::default());
-            child_builder.spawn(
-                CustomBackgroundImageBundle::with_material(custom_mat, materials.as_mut(), meshes.as_mut())
-            );
+            child_builder.spawn(CustomBackgroundImageBundle::with_material(
+                custom_mat,
+                materials.as_mut(),
+                meshes.as_mut(),
+            ));
         });
 
     // Instructions
