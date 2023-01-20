@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use std::marker::PhantomData;
+use std::sync::RwLock;
 
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
@@ -10,11 +11,29 @@ use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor,
 use bevy::render::texture::ImageSampler;
 use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
 use bevy::window::WindowResized;
+use lazy_static::lazy_static;
+
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
 const BGLIB_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
+
+lazy_static! {
+    /// Used to prevent the libraries shaders from being loaded multiple times, emitting events etc.
+    pub static ref BEVY_TILING_PLUGIN_SHADERS_LOADED: RwLock<bool> = RwLock::new(false);
+}
+
+fn load_plugin_shadercode(app: &mut App) {
+    load_internal_asset!(
+        app,
+        TILED_BG_SHADER_HANDLE,
+        "shaders/background.wgsl",
+        Shader::from_wgsl
+    );
+
+    load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
+}
 
 /// Bevy plugin for tiling backgrounds.
 ///
@@ -31,14 +50,18 @@ where
     T::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
 {
     fn build(&self, app: &mut App) {
-        load_internal_asset!(
-            app,
-            TILED_BG_SHADER_HANDLE,
-            "shaders/background.wgsl",
-            Shader::from_wgsl
-        );
-
-        load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
+        if let Ok(mut guard) = BEVY_TILING_PLUGIN_SHADERS_LOADED.write() {
+            if !*guard {
+                info!("Loading bevy_tiling_background shaders");
+                load_plugin_shadercode(app);
+                *guard = true;
+            } else {
+                info!("bevy_tiling_background shaders already loaded. Skipped loading again.");
+            }
+        } else {
+            warn!("Could not get RwLockWriteGuard to read shadercode loading state. Potentially reloading shaders.");
+            load_plugin_shadercode(app)
+        }
 
         app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
