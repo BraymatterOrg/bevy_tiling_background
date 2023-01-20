@@ -5,7 +5,7 @@ use bevy::{
     sprite::Material2d,
 };
 use bevy_tiling_background::{
-    CustomBackgroundImageBundle, SetImageRepeatingExt, TilingBackgroundPlugin,
+    BackgroundMaterial, CustomBackgroundImageBundle, SetImageRepeatingExt, TilingBackgroundPlugin,
 };
 
 /// Bevy doesn't render things that are attached to the camera, so this component will be used
@@ -17,6 +17,8 @@ pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(TilingBackgroundPlugin::<CustomMaterial>::default())
+        // Not actually used, putting this here to test the shader_loading flags
+        .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
         .add_startup_system(setup)
         .add_system(movement)
         .run()
