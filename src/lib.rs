@@ -13,10 +13,10 @@ use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
 use bevy::window::WindowResized;
 use lazy_static::lazy_static;
 
-const TILED_BG_SHADER_HANDLE: HandleUntyped =
+pub const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
 
-const BGLIB_HANDLE: HandleUntyped =
+pub const BGLIB_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
 
 lazy_static! {
