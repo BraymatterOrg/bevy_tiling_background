@@ -1,3 +1,6 @@
+use std::hash::Hash;
+use std::marker::PhantomData;
+
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::ecs::system::Command;
@@ -7,17 +10,26 @@ use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor,
 use bevy::render::texture::ImageSampler;
 use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
 use bevy::window::WindowResized;
-
 const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
+
+const BGLIB_HANDLE: HandleUntyped =
+    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
 
 /// Bevy plugin for tiling backgrounds.
 ///
 /// Insert after Bevy's DefaultPlugins.
-#[derive(Default)]
-pub struct TilingBackgroundPlugin;
+#[derive(Default, TypeUuid)]
+#[uuid = "14268b6c-927e-41e3-affe-410e7609a3fa"]
+pub struct TilingBackgroundPlugin<T: AsBindGroup + Send + Sync + Clone + TypeUuid + Sized + 'static>
+{
+    _phantom: PhantomData<T>,
+}
 
-impl Plugin for TilingBackgroundPlugin {
+impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T>
+where
+    T::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
+{
     fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,
@@ -25,18 +37,64 @@ impl Plugin for TilingBackgroundPlugin {
             "shaders/background.wgsl",
             Shader::from_wgsl
         );
-        app.add_plugin(Material2dPlugin::<BackgroundMaterial>::default())
+
+        load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
+
+        app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
             .register_type::<BackgroundMovementScale>()
-            .add_system_to_stage(CoreStage::PostUpdate, on_window_resize)
-            .add_system(on_background_added)
-            .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
-            .add_system(queue_update_sampler)
+            .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
+            .add_system(Self::on_background_added)
+            .add_system(Self::queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
     }
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
+impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T>
+where
+    <T as AsBindGroup>::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
+{
+    pub fn new() -> Self {
+        TilingBackgroundPlugin::<T> {
+            _phantom: PhantomData {},
+        }
+    }
+
+    pub fn on_window_resize(
+        mut events: EventReader<WindowResized>,
+        mut backgrounds: Query<&mut Transform, With<Handle<T>>>,
+    ) {
+        events.iter().for_each(|ev| {
+            for mut transform in backgrounds.iter_mut() {
+                transform.scale.x = ev.width;
+                transform.scale.y = ev.height;
+            }
+        });
+    }
+
+    pub fn on_background_added(
+        windows: Res<Windows>,
+        mut backgrounds: Query<&mut Transform, Added<Handle<T>>>,
+    ) {
+        if let Some(window) = windows.get_primary() {
+            for mut transform in backgrounds.iter_mut() {
+                transform.scale.x = window.width();
+                transform.scale.y = window.height();
+            }
+        };
+    }
+
+    fn queue_update_sampler(
+        query: Query<&Handle<Image>, Added<Handle<T>>>,
+        mut update_samplers: ResMut<UpdateSamplerRepeating>,
+    ) {
+        for handle in query.iter() {
+            update_samplers.0.push(handle.clone());
+        }
+    }
+}
+
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
 pub struct BackgroundMaterial {
     /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
@@ -57,15 +115,6 @@ impl Material2d for BackgroundMaterial {
 /// A queue of images that need their sampler updated when they are loaded.
 #[derive(Resource, Default)]
 struct UpdateSamplerRepeating(Vec<Handle<Image>>);
-
-fn queue_update_sampler(
-    query: Query<&Handle<Image>, Added<Handle<BackgroundMaterial>>>,
-    mut update_samplers: ResMut<UpdateSamplerRepeating>,
-) {
-    for handle in query.iter() {
-        update_samplers.0.push(handle.clone());
-    }
-}
 
 ///Polls the update_sampler resource and swaps the asset's sampler out for a repeating sampler
 fn update_sampler_on_loaded_system(
@@ -127,6 +176,39 @@ impl Default for BackgroundMovementScale {
     }
 }
 
+#[derive(Bundle)]
+pub struct CustomBackgroundImageBundle<T: Material2d> {
+    pub material: Handle<T>,
+    pub mesh: Mesh2dHandle,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub visibility: Visibility,
+    pub computed_visibility: ComputedVisibility,
+    pub movement_scale: BackgroundMovementScale,
+}
+
+impl<T: Material2d> CustomBackgroundImageBundle<T> {
+    pub fn with_material(
+        material: T,
+        materials: &mut Assets<T>,
+        meshes: &mut Assets<Mesh>,
+    ) -> Self {
+        Self {
+            material: materials.add(material),
+            mesh: meshes
+                .add(Mesh::from(shape::Quad {
+                    size: Vec2 { x: 1., y: 1. },
+                    ..default()
+                }))
+                .into(),
+            transform: Default::default(),
+            global_transform: Default::default(),
+            visibility: Default::default(),
+            computed_visibility: Default::default(),
+            movement_scale: Default::default(),
+        }
+    }
+}
 #[derive(Bundle)]
 pub struct BackgroundImageBundle {
     pub material: Handle<BackgroundMaterial>,
@@ -194,43 +276,5 @@ impl<'w, 's> SetImageRepeatingExt for Commands<'w, 's> {
     /// image is loaded. This may take more than a frame to apply.
     fn set_image_repeating(&mut self, image: Handle<Image>) {
         self.add(SetImageRepeatingCommand { image })
-    }
-}
-
-pub fn on_window_resize(
-    mut events: EventReader<WindowResized>,
-    mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
-) {
-    events.iter().for_each(|ev| {
-        for mut transform in backgrounds.iter_mut() {
-            transform.scale.x = ev.width;
-            transform.scale.y = ev.height;
-        }
-    });
-}
-
-pub fn on_background_added(
-    windows: Res<Windows>,
-    mut backgrounds: Query<&mut Transform, Added<Handle<BackgroundMaterial>>>,
-) {
-    if let Some(window) = windows.get_primary() {
-        for mut transform in backgrounds.iter_mut() {
-            transform.scale.x = window.width();
-            transform.scale.y = window.height();
-        }
-    };
-}
-
-pub fn update_movement_scale_system(
-    mut query: Query<
-        (&mut Handle<BackgroundMaterial>, &BackgroundMovementScale),
-        Changed<BackgroundMovementScale>,
-    >,
-    mut background_materials: ResMut<Assets<BackgroundMaterial>>,
-) {
-    for (bg_material_handle, scale) in query.iter_mut() {
-        if let Some(background_material) = background_materials.get_mut(&*bg_material_handle) {
-            background_material.movement_scale = scale.scale;
-        }
     }
 }

@@ -1,7 +1,11 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    reflect::TypeUuid,
+    render::render_resource::{AsBindGroup, ShaderRef},
+    sprite::Material2d,
+};
 use bevy_tiling_background::{
-    BackgroundImageBundle, BackgroundMaterial, BackgroundMovementScale, SetImageRepeatingExt,
-    TilingBackgroundPlugin,
+    CustomBackgroundImageBundle, SetImageRepeatingExt, TilingBackgroundPlugin,
 };
 
 /// Bevy doesn't render things that are attached to the camera, so this component will be used
@@ -12,40 +16,45 @@ pub struct CameraRig;
 pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
+        .add_plugin(TilingBackgroundPlugin::<CustomMaterial>::default())
         .add_startup_system(setup)
         .add_system(movement)
-        .add_system(update_instructions)
-        .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
         .run()
 }
 
 pub fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
-    mut materials: ResMut<Assets<BackgroundMaterial>>,
+    mut materials: ResMut<Assets<CustomMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let image = asset_server.load("test.png");
+    let image = asset_server.load("space_test.png");
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image.clone());
+
+    //Set up a material
+    let custom_mat = CustomMaterial {
+        movement_scale: 0.15,
+        texture: image,
+        blend_color: Color::CRIMSON,
+    };
 
     // Spawn camera rig with camera and background as children
     commands
         .spawn((CameraRig, SpatialBundle::default()))
         .with_children(|child_builder| {
             child_builder.spawn(Camera2dBundle::default());
-            child_builder.spawn(
-                BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
-                    .at_z_layer(0.1),
-            );
+            child_builder.spawn(CustomBackgroundImageBundle::with_material(
+                custom_mat,
+                materials.as_mut(),
+                meshes.as_mut(),
+            ));
         });
 
     // Instructions
     commands.spawn((
         TextBundle::from_section(
-            "Arrow keys to move\n\
-        +/- for Parallax effect",
+            "Arrow keys to move",
             TextStyle {
                 font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                 font_size: 32.0,
@@ -85,10 +94,8 @@ pub fn setup(
 
 #[derive(Component)]
 struct Instructions;
-
 fn movement(
     mut camera: Query<&mut Transform, With<CameraRig>>,
-    mut background_scales: Query<&mut BackgroundMovementScale>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -109,41 +116,26 @@ fn movement(
     if input.pressed(KeyCode::Up) {
         camera_transform.translation.y += time.delta_seconds() * move_speed;
     }
-
-    for mut background_scale in background_scales.iter_mut() {
-        if input.pressed(KeyCode::Plus) || input.pressed(KeyCode::NumpadAdd) {
-            background_scale.scale += time.delta_seconds();
-        }
-
-        if input.pressed(KeyCode::Minus) || input.pressed(KeyCode::NumpadSubtract) {
-            background_scale.scale -= time.delta_seconds();
-        }
-    }
 }
 
-fn update_instructions(
-    mut query: Query<&mut Text, With<Instructions>>,
-    background_movement: Query<&BackgroundMovementScale>,
-) {
-    let mut instructions = query.single_mut();
-    instructions.sections.first_mut().unwrap().value = format!(
-        "Arrow keys to move\n\
-        +/- to change parallax \n\
-        Current parallax multiplier {}",
-        background_movement.single().scale
-    );
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
+#[uuid = "09756d79-32e9-4dc4-bb95-b373370815e3"]
+pub struct CustomMaterial {
+    /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
+    /// [`AddressMode::Repeat`].
+    #[uniform(0)]
+    pub movement_scale: f32,
+
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
+
+    #[uniform(0)]
+    pub blend_color: Color,
 }
 
-pub fn update_movement_scale_system(
-    mut query: Query<
-        (&mut Handle<BackgroundMaterial>, &BackgroundMovementScale),
-        Changed<BackgroundMovementScale>,
-    >,
-    mut background_materials: ResMut<Assets<BackgroundMaterial>>,
-) {
-    for (bg_material_handle, scale) in query.iter_mut() {
-        if let Some(background_material) = background_materials.get_mut(&*bg_material_handle) {
-            background_material.movement_scale = scale.scale;
-        }
+impl Material2d for CustomMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "custombg.wgsl".into()
     }
 }
