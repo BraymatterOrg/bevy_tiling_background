@@ -22,7 +22,7 @@ pub struct TilingBackgroundPlugin< T: AsBindGroup + Send + Sync + Clone + TypeUu
     _phantom: PhantomData<T>
 }
 
-impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> where T::Data: Clone+ Eq + Send + Sync + Clone + TypeUuid + Sized + Hash {
+impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> where T::Data: Clone+ Eq + Send + Sync + Clone + Sized + Hash {
     fn build(&self, app: &mut App){
         load_internal_asset!(
             app,
@@ -30,24 +30,49 @@ impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T> w
             "shaders/background.wgsl",
             Shader::from_wgsl
         );
+        
         app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
             .register_type::<BackgroundMovementScale>()
-            .add_system_to_stage(CoreStage::PostUpdate, on_window_resize)
-            .add_system(on_background_added)
-            .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
+            .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
+            .add_system(Self::on_background_added)
             .add_system(queue_update_sampler)
             .add_system(update_sampler_on_loaded_system);
     }
 }
 
-impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as AsBindGroup>::Data: Clone+ Eq + Send + Sync + Clone + TypeUuid + Sized + Hash {
+impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T> where <T as AsBindGroup>::Data: Clone+ Eq + Send + Sync + Clone  + Sized + Hash {
     pub fn new() -> Self{
         TilingBackgroundPlugin::<T>{
             _phantom: PhantomData{}
         }
     }
+
+    pub fn on_window_resize (
+        mut events: EventReader<WindowResized>,
+        mut backgrounds: Query<&mut Transform, With<Handle<T>>>,
+    ){
+        events.iter().for_each(|ev| {
+            for mut transform in backgrounds.iter_mut() {
+                transform.scale.x = ev.width;
+                transform.scale.y = ev.height;
+            }
+        });
+    }
+    
+    pub fn on_background_added(
+        windows: Res<Windows>,
+        mut backgrounds: Query<&mut Transform, Added<Handle<T>>>,
+    ) {
+        if let Some(window) = windows.get_primary() {
+            for mut transform in backgrounds.iter_mut() {
+                transform.scale.x = window.width();
+                transform.scale.y = window.height();
+            }
+        };
+    }
 }
+
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
@@ -140,8 +165,14 @@ impl Default for BackgroundMovementScale {
     }
 }
 
-pub struct CustomBackgroundBundle<T: Material2d>{
-    pub material: Handle<T>
+pub struct CustomBackgroundImageBundle<T: Material2d>{
+    pub material: Handle<T>,
+    pub mesh: Mesh2dHandle,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub visibility: Visibility,
+    pub computed_visibility: ComputedVisibility,
+    pub movement_scale: BackgroundMovementScale,
 }
 
 #[derive(Bundle)]
@@ -211,43 +242,5 @@ impl<'w, 's> SetImageRepeatingExt for Commands<'w, 's> {
     /// image is loaded. This may take more than a frame to apply.
     fn set_image_repeating(&mut self, image: Handle<Image>) {
         self.add(SetImageRepeatingCommand { image })
-    }
-}
-
-pub fn on_window_resize(
-    mut events: EventReader<WindowResized>,
-    mut backgrounds: Query<&mut Transform, With<Handle<BackgroundMaterial>>>,
-) {
-    events.iter().for_each(|ev| {
-        for mut transform in backgrounds.iter_mut() {
-            transform.scale.x = ev.width;
-            transform.scale.y = ev.height;
-        }
-    });
-}
-
-pub fn on_background_added(
-    windows: Res<Windows>,
-    mut backgrounds: Query<&mut Transform, Added<Handle<BackgroundMaterial>>>,
-) {
-    if let Some(window) = windows.get_primary() {
-        for mut transform in backgrounds.iter_mut() {
-            transform.scale.x = window.width();
-            transform.scale.y = window.height();
-        }
-    };
-}
-
-pub fn update_movement_scale_system(
-    mut query: Query<
-        (&mut Handle<BackgroundMaterial>, &BackgroundMovementScale),
-        Changed<BackgroundMovementScale>,
-    >,
-    mut background_materials: ResMut<Assets<BackgroundMaterial>>,
-) {
-    for (bg_material_handle, scale) in query.iter_mut() {
-        if let Some(background_material) = background_materials.get_mut(&*bg_material_handle) {
-            background_material.movement_scale = scale.scale;
-        }
     }
 }
