@@ -4,6 +4,8 @@ Use `cargo run --example tiling` to see the example.
 
 Supports Parallax, Layered, Tiling backgrounds and makes them easy to add in bevy. 
 
+The scrolling function is exposed as a shader import making it available for use in more specialized shaders than the provided BackgroundMaterial.
+
 ![bevy_tiling](https://user-images.githubusercontent.com/77391373/212493042-b3bd2f07-7238-42e0-ae35-edec0157eee7.gif)
 
 ### Compatible Versions
