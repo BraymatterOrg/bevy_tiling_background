@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::{
     prelude::*,
     reflect::TypeUuid,
@@ -5,7 +7,8 @@ use bevy::{
     sprite::Material2d,
 };
 use bevy_tiling_background::{
-    BackgroundMaterial, CustomBackgroundImageBundle, SetImageRepeatingExt, TilingBackgroundPlugin,
+    BackgroundMaterial, BackgroundMovementScale, CustomBackgroundImageBundle, ScrollingBackground,
+    SetImageRepeatingExt, TilingBackgroundPlugin,
 };
 
 /// Bevy doesn't render things that are attached to the camera, so this component will be used
@@ -36,7 +39,7 @@ pub fn setup(
 
     //Set up a material
     let custom_mat = CustomMaterial {
-        movement_scale: 0.15,
+        movement_scale: -0.15,
         texture: image,
         blend_color: Color::CRIMSON,
     };
@@ -46,11 +49,16 @@ pub fn setup(
         .spawn((CameraRig, SpatialBundle::default()))
         .with_children(|child_builder| {
             child_builder.spawn(Camera2dBundle::default());
-            child_builder.spawn(CustomBackgroundImageBundle::with_material(
-                custom_mat,
-                materials.as_mut(),
-                meshes.as_mut(),
-            ));
+            child_builder
+                .spawn(CustomBackgroundImageBundle::with_material(
+                    custom_mat,
+                    materials.as_mut(),
+                    meshes.as_mut(),
+                ))
+                .insert(BackgroundMovementScale {
+                    scale: 0.00,
+                    _phantom: PhantomData::<CustomMaterial>::default(),
+                });
         });
 
     // Instructions
@@ -139,5 +147,11 @@ pub struct CustomMaterial {
 impl Material2d for CustomMaterial {
     fn fragment_shader() -> ShaderRef {
         "custombg.wgsl".into()
+    }
+}
+
+impl ScrollingBackground for CustomMaterial {
+    fn set_movement(&mut self, movement: f32) {
+        self.movement_scale = movement;
     }
 }

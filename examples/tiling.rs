@@ -88,7 +88,7 @@ struct Instructions;
 
 fn movement(
     mut camera: Query<&mut Transform, With<CameraRig>>,
-    mut background_scales: Query<&mut BackgroundMovementScale>,
+    mut background_scales: Query<&mut BackgroundMovementScale<BackgroundMaterial>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -123,7 +123,7 @@ fn movement(
 
 fn update_instructions(
     mut query: Query<&mut Text, With<Instructions>>,
-    background_movement: Query<&BackgroundMovementScale>,
+    background_movement: Query<&BackgroundMovementScale<BackgroundMaterial>>,
 ) {
     let mut instructions = query.single_mut();
     instructions.sections.first_mut().unwrap().value = format!(
@@ -136,8 +136,11 @@ fn update_instructions(
 
 pub fn update_movement_scale_system(
     mut query: Query<
-        (&mut Handle<BackgroundMaterial>, &BackgroundMovementScale),
-        Changed<BackgroundMovementScale>,
+        (
+            &mut Handle<BackgroundMaterial>,
+            &BackgroundMovementScale<BackgroundMaterial>,
+        ),
+        Changed<BackgroundMovementScale<BackgroundMaterial>>,
     >,
     mut background_materials: ResMut<Assets<BackgroundMaterial>>,
 ) {

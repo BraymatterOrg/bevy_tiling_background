@@ -45,7 +45,7 @@ pub struct TilingBackgroundPlugin<T: AsBindGroup + Send + Sync + Clone + TypeUui
     _phantom: PhantomData<T>,
 }
 
-impl<T: Material2d + AsBindGroup + Clone> Plugin for TilingBackgroundPlugin<T>
+impl<T: Material2d + AsBindGroup + Clone + ScrollingBackground> Plugin for TilingBackgroundPlugin<T>
 where
     T::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
 {
@@ -65,15 +65,15 @@ where
 
         app.add_plugin(Material2dPlugin::<T>::default())
             .insert_resource(UpdateSamplerRepeating::default())
-            .register_type::<BackgroundMovementScale>()
             .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
             .add_system(Self::on_background_added)
             .add_system(Self::queue_update_sampler)
+            .add_system(Self::update_movement_scale_system)
             .add_system(update_sampler_on_loaded_system);
     }
 }
 
-impl<T: Material2d + AsBindGroup + Clone> TilingBackgroundPlugin<T>
+impl<T: Material2d + AsBindGroup + Clone + ScrollingBackground> TilingBackgroundPlugin<T>
 where
     <T as AsBindGroup>::Data: Clone + Eq + Send + Sync + Clone + Sized + Hash,
 {
@@ -115,6 +115,25 @@ where
             update_samplers.0.push(handle.clone());
         }
     }
+
+    pub fn update_movement_scale_system(
+        mut query: Query<
+            (&mut Handle<T>, &BackgroundMovementScale<T>),
+            Changed<BackgroundMovementScale<T>>,
+        >,
+        mut background_materials: ResMut<Assets<T>>,
+    ) {
+        for (bg_material_handle, scale) in query.iter_mut() {
+            if let Some(background_material) = background_materials.get_mut(&*bg_material_handle) {
+                background_material.set_movement(scale.scale);
+            }
+        }
+    }
+}
+
+pub trait ScrollingBackground {
+    ///Use this as a hook to set the materials movement scale if applicable to your shader.
+    fn set_movement(&mut self, movement: f32);
 }
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
@@ -135,6 +154,17 @@ impl Material2d for BackgroundMaterial {
     }
 }
 
+impl ScrollingBackground for BackgroundMaterial {
+    fn set_movement(&mut self, movement: f32) {
+        self.movement_scale = movement;
+    }
+}
+
+impl ScrollingBackground for &mut BackgroundMaterial {
+    fn set_movement(&mut self, movement: f32) {
+        self.movement_scale = movement;
+    }
+}
 /// A queue of images that need their sampler updated when they are loaded.
 #[derive(Resource, Default)]
 struct UpdateSamplerRepeating(Vec<Handle<Image>>);
@@ -187,15 +217,18 @@ fn update_sampler_on_loaded_system(
     }
 }
 
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct BackgroundMovementScale {
+#[derive(Component)]
+pub struct BackgroundMovementScale<T: Material2d> {
     pub scale: f32,
+    pub _phantom: PhantomData<T>,
 }
 
-impl Default for BackgroundMovementScale {
+impl<T: Material2d> Default for BackgroundMovementScale<T> {
     fn default() -> Self {
-        Self { scale: 0.15 }
+        Self {
+            scale: 0.15,
+            _phantom: PhantomData::default(),
+        }
     }
 }
 
@@ -207,10 +240,10 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-    pub movement_scale: BackgroundMovementScale,
+    pub movement_scale: BackgroundMovementScale<T>,
 }
 
-impl<T: Material2d> CustomBackgroundImageBundle<T> {
+impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
     pub fn with_material(
         material: T,
         materials: &mut Assets<T>,
@@ -240,7 +273,7 @@ pub struct BackgroundImageBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-    pub movement_scale: BackgroundMovementScale,
+    pub movement_scale: BackgroundMovementScale<BackgroundMaterial>,
 }
 
 impl BackgroundImageBundle {
