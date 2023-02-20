@@ -1,3 +1,4 @@
+#import bevy_core_pipeline::fullscreen_vertex_shader
 #import bevy_sprite::mesh2d_view_bindings
 #import bevy_sprite::mesh2d_bindings
 #import bevy_sprite::mesh2d_functions
@@ -21,7 +22,7 @@ var texture_sampler: sampler;
 @fragment
 fn fragment(
     @builtin(position) position: vec4<f32>,
-    #import bevy_pbr::mesh_vertex_output
+    @location(0) uv: vec2<f32>,
 ) -> @location(0) vec4<f32> {
     let scale = uniforms.scale;
     let offset = mesh2d_position_world_to_clip(vec4<f32>(view.world_position.xy, 0.0, 0.0)).xy;
