@@ -4,12 +4,17 @@ use std::sync::RwLock;
 
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
+use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
-use bevy::render::render_resource::{AddressMode, AsBindGroup, SamplerDescriptor, ShaderRef};
+use bevy::render::mesh::MeshVertexBufferLayout;
+use bevy::render::render_resource::{
+    AddressMode, AsBindGroup, PrimitiveState, RenderPipelineDescriptor, SamplerDescriptor,
+    ShaderRef, SpecializedMeshPipelineError,
+};
 use bevy::render::texture::ImageSampler;
-use bevy::sprite::{Material2d, Material2dPlugin, Mesh2dHandle};
+use bevy::sprite::{Material2d, Material2dKey, Material2dPlugin, Mesh2dHandle};
 use bevy::window::WindowResized;
 use lazy_static::lazy_static;
 
@@ -139,18 +144,31 @@ pub trait ScrollingBackground {
 #[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
 pub struct BackgroundMaterial {
-    /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
-    /// [`AddressMode::Repeat`].
     #[uniform(0)]
     pub movement_scale: f32,
+    /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
+    /// [`AddressMode::Repeat`].
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,
 }
 
 impl Material2d for BackgroundMaterial {
+    fn vertex_shader() -> ShaderRef {
+        FULLSCREEN_SHADER_HANDLE.typed().into()
+    }
     fn fragment_shader() -> ShaderRef {
         TILED_BG_SHADER_HANDLE.typed().into()
+    }
+
+    fn specialize(
+        descriptor: &mut RenderPipelineDescriptor,
+        _: &MeshVertexBufferLayout,
+        _: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive = PrimitiveState::default();
+        descriptor.vertex.entry_point = "fullscreen_vertex_shader".into();
+        Ok(())
     }
 }
 
@@ -219,6 +237,14 @@ fn update_sampler_on_loaded_system(
 
 #[derive(Component)]
 pub struct BackgroundMovementScale<T: Material2d> {
+    /// Determines how fast the background will scroll when the camera moves.
+    ///
+    /// # Examples
+    ///
+    /// - A scale of 0.0 the background will move with the camera.
+    /// - A scale of 1.0 the background will move opposite the camera at the same speed as the camera,
+    /// making it stationary in the world.
+    /// - A scale of 2.0 the background will move twice as fast as the camera.
     pub scale: f32,
     pub _phantom: PhantomData<T>,
 }
@@ -226,7 +252,7 @@ pub struct BackgroundMovementScale<T: Material2d> {
 impl<T: Material2d> Default for BackgroundMovementScale<T> {
     fn default() -> Self {
         Self {
-            scale: 0.15,
+            scale: 1.0,
             _phantom: PhantomData::default(),
         }
     }

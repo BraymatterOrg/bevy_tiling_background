@@ -1,5 +1,11 @@
 use std::marker::PhantomData;
 
+use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
+use bevy::render::mesh::MeshVertexBufferLayout;
+use bevy::render::render_resource::{
+    PrimitiveState, RenderPipelineDescriptor, SpecializedMeshPipelineError,
+};
+use bevy::sprite::Material2dKey;
 use bevy::{
     prelude::*,
     reflect::TypeUuid,
@@ -10,11 +16,6 @@ use bevy_tiling_background::{
     BackgroundMaterial, BackgroundMovementScale, CustomBackgroundImageBundle, ScrollingBackground,
     SetImageRepeatingExt, TilingBackgroundPlugin,
 };
-
-/// Bevy doesn't render things that are attached to the camera, so this component will be used
-/// on a parent entity to move our camera and background.
-#[derive(Component)]
-pub struct CameraRig;
 
 pub fn main() {
     App::new()
@@ -37,28 +38,26 @@ pub fn setup(
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image.clone());
 
-    //Set up a material
+    // Set up a material
     let custom_mat = CustomMaterial {
         movement_scale: -0.15,
         texture: image,
         blend_color: Color::CRIMSON,
     };
 
-    // Spawn camera rig with camera and background as children
+    // Spawn Camera
+    commands.spawn(Camera2dBundle::default());
+
+    // Spawn Background
     commands
-        .spawn((CameraRig, SpatialBundle::default()))
-        .with_children(|child_builder| {
-            child_builder.spawn(Camera2dBundle::default());
-            child_builder
-                .spawn(CustomBackgroundImageBundle::with_material(
-                    custom_mat,
-                    materials.as_mut(),
-                    meshes.as_mut(),
-                ))
-                .insert(BackgroundMovementScale {
-                    scale: 0.00,
-                    _phantom: PhantomData::<CustomMaterial>::default(),
-                });
+        .spawn(CustomBackgroundImageBundle::with_material(
+            custom_mat,
+            materials.as_mut(),
+            meshes.as_mut(),
+        ))
+        .insert(BackgroundMovementScale {
+            scale: 0.00,
+            _phantom: PhantomData::<CustomMaterial>::default(),
         });
 
     // Instructions
@@ -105,7 +104,7 @@ pub fn setup(
 #[derive(Component)]
 struct Instructions;
 fn movement(
-    mut camera: Query<&mut Transform, With<CameraRig>>,
+    mut camera: Query<&mut Transform, With<Camera>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -131,11 +130,10 @@ fn movement(
 #[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
 #[uuid = "09756d79-32e9-4dc4-bb95-b373370815e3"]
 pub struct CustomMaterial {
-    /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
-    /// [`AddressMode::Repeat`].
     #[uniform(0)]
     pub movement_scale: f32,
-
+    /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
+    /// [`AddressMode::Repeat`].
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,
@@ -145,8 +143,21 @@ pub struct CustomMaterial {
 }
 
 impl Material2d for CustomMaterial {
+    fn vertex_shader() -> ShaderRef {
+        FULLSCREEN_SHADER_HANDLE.typed().into()
+    }
     fn fragment_shader() -> ShaderRef {
         "custombg.wgsl".into()
+    }
+
+    fn specialize(
+        descriptor: &mut RenderPipelineDescriptor,
+        _: &MeshVertexBufferLayout,
+        _: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive = PrimitiveState::default();
+        descriptor.vertex.entry_point = "fullscreen_vertex_shader".into();
+        Ok(())
     }
 }
 

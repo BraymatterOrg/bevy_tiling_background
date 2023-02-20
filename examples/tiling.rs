@@ -4,14 +4,9 @@ use bevy_tiling_background::{
     TilingBackgroundPlugin,
 };
 
-/// Bevy doesn't render things that are attached to the camera, so this component will be used
-/// on a parent entity to move our camera and background.
-#[derive(Component)]
-pub struct CameraRig;
-
 pub fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_linear()))
         .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
         .add_startup_system(setup)
         .add_system(movement)
@@ -30,16 +25,12 @@ pub fn setup(
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(image.clone());
 
-    // Spawn camera rig with camera and background as children
-    commands
-        .spawn((CameraRig, SpatialBundle::default()))
-        .with_children(|child_builder| {
-            child_builder.spawn(Camera2dBundle::default());
-            child_builder.spawn(
-                BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
-                    .at_z_layer(0.1),
-            );
-        });
+    commands.spawn(Camera2dBundle::default());
+
+    commands.spawn(
+        BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
+            .at_z_layer(0.1),
+    );
 
     // Instructions
     commands.spawn((
@@ -87,7 +78,7 @@ pub fn setup(
 struct Instructions;
 
 fn movement(
-    mut camera: Query<&mut Transform, With<CameraRig>>,
+    mut camera: Query<&mut Transform, With<Camera>>,
     mut background_scales: Query<&mut BackgroundMovementScale<BackgroundMaterial>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,

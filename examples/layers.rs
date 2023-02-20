@@ -13,9 +13,6 @@ pub fn main() {
         .run()
 }
 
-#[derive(Component)]
-struct CameraRig;
-
 pub fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
@@ -30,21 +27,19 @@ pub fn setup(
     // Queue a command to set the image to be repeating once the image is loaded.
     commands.set_image_repeating(front_layer.clone());
 
-    // Spawn camera rig with camera and backgrounds as children
-    commands
-        .spawn((CameraRig, SpatialBundle::default()))
-        .with_children(|child_builder| {
-            child_builder.spawn(Camera2dBundle::default());
-            child_builder.spawn(
-                BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
-                    .at_z_layer(0.1),
-            );
-            child_builder.spawn(
-                BackgroundImageBundle::from_image(front_layer, materials.as_mut(), meshes.as_mut())
-                    .at_z_layer(2.1)
-                    .with_movement_scale(0.25),
-            );
-        });
+    // Spawn camera
+    commands.spawn(Camera2dBundle::default());
+
+    // Spawn backgrounds
+    commands.spawn(
+        BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
+            .at_z_layer(0.1),
+    );
+    commands.spawn(
+        BackgroundImageBundle::from_image(front_layer, materials.as_mut(), meshes.as_mut())
+            .at_z_layer(2.1)
+            .with_movement_scale(1.1),
+    );
 
     // Instructions
     commands.spawn((
@@ -77,8 +72,8 @@ struct Instructions;
 struct Player;
 
 fn movement(
-    mut camera: Query<&mut Transform, With<CameraRig>>,
-    mut sprite_transform: Query<(&mut Transform, &Player), Without<CameraRig>>,
+    mut camera: Query<&mut Transform, With<Camera>>,
+    mut sprite_transform: Query<(&mut Transform, &Player), Without<Camera>>,
     mut background_scales: Query<&mut BackgroundMovementScale<BackgroundMaterial>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
