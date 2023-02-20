@@ -74,7 +74,7 @@ struct Player;
 fn movement(
     mut camera: Query<&mut Transform, With<Camera>>,
     mut sprite_transform: Query<(&mut Transform, &Player), Without<Camera>>,
-    mut background_scales: Query<&mut BackgroundMovementScale<BackgroundMaterial>>,
+    mut background_scales: Query<&mut BackgroundMovementScale>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {

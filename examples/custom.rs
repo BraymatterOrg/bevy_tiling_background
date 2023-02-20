@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
 use bevy::render::mesh::MeshVertexBufferLayout;
 use bevy::render::render_resource::{
@@ -55,10 +53,7 @@ pub fn setup(
             materials.as_mut(),
             meshes.as_mut(),
         ))
-        .insert(BackgroundMovementScale {
-            scale: 0.00,
-            _phantom: PhantomData::<CustomMaterial>::default(),
-        });
+        .insert(BackgroundMovementScale { scale: 0.00 });
 
     // Instructions
     commands.spawn((
