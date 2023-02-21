@@ -58,6 +58,7 @@ where
         });
 
         app.add_plugin(Material2dPlugin::<T>::default())
+            .register_type::<BackgroundMovementScale>()
             .insert_resource(UpdateSamplerRepeating::default())
             .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
             .add_system(Self::on_background_added)
