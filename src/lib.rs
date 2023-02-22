@@ -226,7 +226,7 @@ fn update_sampler_on_loaded_system(
 }
 
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Default)]
 pub struct BackgroundMovementScale {
     /// Determines how fast the background will scroll when the camera moves.
     ///
