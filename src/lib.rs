@@ -58,6 +58,7 @@ where
         });
 
         app.add_plugin(Material2dPlugin::<T>::default())
+            .register_type::<BackgroundMovementScale>()
             .insert_resource(UpdateSamplerRepeating::default())
             .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
             .add_system(Self::on_background_added)
@@ -112,8 +113,8 @@ where
 
     pub fn update_movement_scale_system(
         mut query: Query<
-            (&mut Handle<T>, &BackgroundMovementScale<T>),
-            Changed<BackgroundMovementScale<T>>,
+            (&mut Handle<T>, &BackgroundMovementScale),
+            Changed<BackgroundMovementScale>,
         >,
         mut background_materials: ResMut<Assets<T>>,
     ) {
@@ -130,7 +131,7 @@ pub trait ScrollingBackground {
     fn set_movement(&mut self, movement: f32);
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default, Reflect)]
 #[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
 pub struct BackgroundMaterial {
     #[uniform(0)]
@@ -224,8 +225,9 @@ fn update_sampler_on_loaded_system(
     }
 }
 
-#[derive(Component)]
-pub struct BackgroundMovementScale<T: Material2d> {
+#[derive(Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct BackgroundMovementScale {
     /// Determines how fast the background will scroll when the camera moves.
     ///
     /// # Examples
@@ -235,15 +237,11 @@ pub struct BackgroundMovementScale<T: Material2d> {
     /// making it stationary in the world.
     /// - A scale of 2.0 the background will move twice as fast as the camera.
     pub scale: f32,
-    pub _phantom: PhantomData<T>,
 }
 
-impl<T: Material2d> Default for BackgroundMovementScale<T> {
+impl Default for BackgroundMovementScale {
     fn default() -> Self {
-        Self {
-            scale: 1.0,
-            _phantom: PhantomData::default(),
-        }
+        Self { scale: 1.0 }
     }
 }
 
@@ -255,7 +253,7 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-    pub movement_scale: BackgroundMovementScale<T>,
+    pub movement_scale: BackgroundMovementScale,
 }
 
 impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
@@ -288,7 +286,7 @@ pub struct BackgroundImageBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-    pub movement_scale: BackgroundMovementScale<BackgroundMaterial>,
+    pub movement_scale: BackgroundMovementScale,
 }
 
 impl BackgroundImageBundle {
