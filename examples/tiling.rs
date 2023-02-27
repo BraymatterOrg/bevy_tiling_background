@@ -11,7 +11,7 @@ pub fn main() {
         .add_startup_system(setup)
         .add_system(movement)
         .add_system(update_instructions)
-        .add_system_to_stage(CoreStage::PostUpdate, update_movement_scale_system)
+        .add_system(update_movement_scale_system.in_base_set(CoreSet::PostUpdate))
         .run()
 }
 

@@ -15,7 +15,7 @@ use bevy::render::render_resource::{
 };
 use bevy::render::texture::ImageSampler;
 use bevy::sprite::{Material2d, Material2dKey, Material2dPlugin, Mesh2dHandle};
-use bevy::window::WindowResized;
+use bevy::window::{PrimaryWindow, WindowResized};
 
 pub const TILED_BG_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
@@ -60,7 +60,7 @@ where
         app.add_plugin(Material2dPlugin::<T>::default())
             .register_type::<BackgroundMovementScale>()
             .insert_resource(UpdateSamplerRepeating::default())
-            .add_system_to_stage(CoreStage::PostUpdate, Self::on_window_resize)
+            .add_system(Self::on_window_resize.in_base_set(CoreSet::PostUpdate))
             .add_system(Self::on_background_added)
             .add_system(Self::queue_update_sampler)
             .add_system(Self::update_movement_scale_system)
@@ -91,10 +91,10 @@ where
     }
 
     pub fn on_background_added(
-        windows: Res<Windows>,
+        windows: Query<&Window, With<PrimaryWindow>>,
         mut backgrounds: Query<&mut Transform, Added<Handle<T>>>,
     ) {
-        if let Some(window) = windows.get_primary() {
+        if let Ok(window) = windows.get_single() {
             for mut transform in backgrounds.iter_mut() {
                 transform.scale.x = window.width();
                 transform.scale.y = window.height();
