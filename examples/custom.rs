@@ -30,7 +30,6 @@ pub fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
     mut materials: ResMut<Assets<CustomMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let image = asset_server.load("space_test.png");
     // Queue a command to set the image to be repeating once the image is loaded.
@@ -51,7 +50,6 @@ pub fn setup(
         .spawn(CustomBackgroundImageBundle::with_material(
             custom_mat,
             materials.as_mut(),
-            meshes.as_mut(),
         ))
         .insert(BackgroundMovementScale { scale: 0.00 });
 

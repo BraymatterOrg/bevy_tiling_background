@@ -23,6 +23,9 @@ pub const TILED_BG_SHADER_HANDLE: HandleUntyped =
 pub const BGLIB_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
 
+pub const BG_MESH_HANDLE: HandleUntyped =
+    HandleUntyped::weak_from_u64(Mesh::TYPE_UUID, 12316584166263728426);
+
 /// Prevent shaders from being loaded multiple times, emitting events etc.
 pub static BEVY_TILING_PLUGIN_SHADERS_LOADED: Once = Once::new();
 
@@ -35,6 +38,16 @@ fn load_plugin_shadercode(app: &mut App) {
     );
 
     load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
+
+    // This is doing the same thing as `load_internal_asset` just not from a file.
+    let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
+    meshes.set_untracked(
+        BG_MESH_HANDLE,
+        Mesh::from(shape::Quad {
+            size: Vec2 { x: 1., y: 1. },
+            ..default()
+        }),
+    );
 }
 
 /// Bevy plugin for tiling backgrounds.
@@ -257,19 +270,10 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
 }
 
 impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
-    pub fn with_material(
-        material: T,
-        materials: &mut Assets<T>,
-        meshes: &mut Assets<Mesh>,
-    ) -> Self {
+    pub fn with_material(material: T, materials: &mut Assets<T>) -> Self {
         Self {
             material: materials.add(material),
-            mesh: meshes
-                .add(Mesh::from(shape::Quad {
-                    size: Vec2 { x: 1., y: 1. },
-                    ..default()
-                }))
-                .into(),
+            mesh: BG_MESH_HANDLE.typed().into(),
             transform: Default::default(),
             global_transform: Default::default(),
             visibility: Default::default(),
@@ -293,19 +297,13 @@ impl BackgroundImageBundle {
     pub fn from_image(
         image: Handle<Image>,
         background_materials: &mut Assets<BackgroundMaterial>,
-        meshes: &mut Assets<Mesh>,
     ) -> Self {
         Self {
             material: background_materials.add(BackgroundMaterial {
                 texture: image,
                 movement_scale: 1.0,
             }),
-            mesh: meshes
-                .add(Mesh::from(shape::Quad {
-                    size: Vec2 { x: 1., y: 1. },
-                    ..default()
-                }))
-                .into(),
+            mesh: BG_MESH_HANDLE.typed().into(),
             transform: Default::default(),
             global_transform: Default::default(),
             visibility: Default::default(),
