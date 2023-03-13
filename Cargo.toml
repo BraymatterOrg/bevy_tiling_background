@@ -1,6 +1,6 @@
 [package]
 name = "bevy_tiling_background"
-version = "0.9.2"
+version = "0.10.0"
 edition = "2021"
 authors = ["Cayle Bray", "Paul Hansen"]
 description = "A plugin to make tiling, layered, and parallax backgrounds for bevy2D"
@@ -12,8 +12,12 @@ repository = "https://github.com/Braymatter/bevy_tiling_background"
 homepage = "https://github.com/Braymatter/bevy_tiling_background"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-bevy = { version = "0.9", default-features = false, features = ["bevy_asset", "render"] }
+[dependencies.bevy]
+version = "0.10"
+default-features = false
+features = ["bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_sprite"]
 
-[dev-dependencies]
-bevy = { version = "0.9", default-features = false, features = ["bevy_asset", "render", "bevy_winit", "png"] }
+[dev-dependencies.bevy]
+version = "0.10"
+default-features = false
+features = ["bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_winit", "bevy_text", "bevy_ui", "png"]
