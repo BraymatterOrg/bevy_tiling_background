@@ -17,7 +17,6 @@ pub fn setup(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
     mut materials: ResMut<Assets<BackgroundMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let image = asset_server.load("space_test.png");
     // Queue a command to set the image to be repeating once the image is loaded.
@@ -31,12 +30,9 @@ pub fn setup(
     commands.spawn(Camera2dBundle::default());
 
     // Spawn backgrounds
+    commands.spawn(BackgroundImageBundle::from_image(image, materials.as_mut()).at_z_layer(0.1));
     commands.spawn(
-        BackgroundImageBundle::from_image(image, materials.as_mut(), meshes.as_mut())
-            .at_z_layer(0.1),
-    );
-    commands.spawn(
-        BackgroundImageBundle::from_image(front_layer, materials.as_mut(), meshes.as_mut())
+        BackgroundImageBundle::from_image(front_layer, materials.as_mut())
             .at_z_layer(2.1)
             .with_movement_scale(1.1),
     );

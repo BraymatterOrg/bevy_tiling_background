@@ -1,5 +1,11 @@
 # 0.9 to 0.10
 
+- Remove meshes parameter when calling `BackgroundImageBundle::from_image` or `CustomBackgroundImageBundle::with_material`.
+  ```rust
+  // Old
+  BackgroundImageBundle::from_image(image, materials, meshes)
+  // New
+  BackgroundImageBundle::from_image(image, materials)
 - Remove the type parameter from `BackgroundMovementScale` wherever it is used in your code.
 
   **Before**
