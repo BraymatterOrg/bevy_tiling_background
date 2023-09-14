@@ -7,11 +7,11 @@ use bevy_tiling_background::{
 pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_linear()))
-        .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
-        .add_startup_system(setup)
-        .add_system(movement)
-        .add_system(update_instructions)
-        .add_system(update_movement_scale_system.in_base_set(CoreSet::PostUpdate))
+        .add_plugins(TilingBackgroundPlugin::<BackgroundMaterial>::default())
+        .add_systems(Startup, setup)
+        .add_systems(Update, movement)
+        .add_systems(Update, update_instructions)
+        .add_systems(PostUpdate, update_movement_scale_system)
         .run()
 }
 

@@ -6,7 +6,7 @@ use bevy::render::render_resource::{
 use bevy::sprite::Material2dKey;
 use bevy::{
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::Material2d,
 };
@@ -18,11 +18,11 @@ use bevy_tiling_background::{
 pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(TilingBackgroundPlugin::<CustomMaterial>::default())
+        .add_plugins(TilingBackgroundPlugin::<CustomMaterial>::default())
         // Not actually used, putting this here to test the shader_loading flags
-        .add_plugin(TilingBackgroundPlugin::<BackgroundMaterial>::default())
-        .add_startup_system(setup)
-        .add_system(movement)
+        .add_plugins(TilingBackgroundPlugin::<BackgroundMaterial>::default())
+        .add_systems(Startup, setup)
+        .add_systems(Update, movement)
         .run()
 }
 
@@ -120,7 +120,7 @@ fn movement(
     }
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default)]
+#[derive(AsBindGroup, Debug, Clone, TypeUuid, TypePath, Default)]
 #[uuid = "09756d79-32e9-4dc4-bb95-b373370815e3"]
 pub struct CustomMaterial {
     #[uniform(0)]

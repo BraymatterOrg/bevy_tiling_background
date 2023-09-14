@@ -1,9 +1,9 @@
 #import bevy_core_pipeline::fullscreen_vertex_shader
-#import bevy_sprite::mesh2d_view_bindings
+#import bevy_sprite::mesh2d_view_bindings view
 #import bevy_sprite::mesh2d_bindings
-#import bevy_sprite::mesh2d_functions
+#import bevy_sprite::mesh2d_functions mesh2d_position_world_to_clip
 
-#import braymatter::bglib
+#import braymatter::bglib scroll
 
 struct Uniforms {
     scale: f32,
@@ -24,7 +24,7 @@ fn fragment(
 ) -> @location(0) vec4<f32> {
     let scale = uniforms.scale;
     let offset = mesh2d_position_world_to_clip(vec4<f32>(view.world_position.xy, 0.0, 0.0)).xy;
-    let color = scroll(texture, texture_sampler, scale, uv, offset) + uniforms.blend_color;
+    let color = scroll(texture, texture_sampler, scale, uv, offset, view.viewport.zw) + uniforms.blend_color;
     return color;
 }
 
