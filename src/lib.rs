@@ -70,14 +70,14 @@ where
             load_plugin_shadercode(app);
         });
 
-        app.add_plugin(Material2dPlugin::<T>::default())
+        app.add_plugins(Material2dPlugin::<T>::default())
             .register_type::<BackgroundMovementScale>()
             .insert_resource(UpdateSamplerRepeating::default())
-            .add_system(Self::on_window_resize.in_base_set(CoreSet::PostUpdate))
-            .add_system(Self::on_background_added)
-            .add_system(Self::queue_update_sampler)
-            .add_system(Self::update_movement_scale_system)
-            .add_system(update_sampler_on_loaded_system);
+            .add_systems(PostUpdate, Self::on_window_resize)
+            .add_systems(Update, Self::on_background_added)
+            .add_systems(Update, Self::queue_update_sampler)
+            .add_systems(Update, Self::update_movement_scale_system)
+            .add_systems(Update, update_sampler_on_loaded_system);
     }
 }
 
@@ -149,6 +149,9 @@ pub trait ScrollingBackground {
 pub struct BackgroundMaterial {
     #[uniform(0)]
     pub movement_scale: f32,
+    /// webgl2 requires 16 byte alignment
+    #[uniform(0)]
+    pub _wasm_padding: Vec3,
     /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
     /// [`AddressMode::Repeat`].
     #[texture(1)]
@@ -211,7 +214,7 @@ fn update_sampler_on_loaded_system(
                 update_sampler.0.remove(index);
             }
             LoadState::Loaded => {
-                let mut bg_texture = images
+                let bg_texture = images
                     .get_mut(&handle)
                     .expect("the image should be loaded at this point");
 
@@ -302,6 +305,7 @@ impl BackgroundImageBundle {
             material: background_materials.add(BackgroundMaterial {
                 texture: image,
                 movement_scale: 1.0,
+                _wasm_padding: Vec3::ZERO,
             }),
             mesh: BG_MESH_HANDLE.typed().into(),
             transform: Default::default(),
@@ -328,7 +332,7 @@ struct SetImageRepeatingCommand {
 }
 
 impl Command for SetImageRepeatingCommand {
-    fn write(self, world: &mut World) {
+    fn apply(self, world: &mut World) {
         let mut samplers = world.resource_mut::<UpdateSamplerRepeating>();
         samplers.0.push(self.image);
     }
