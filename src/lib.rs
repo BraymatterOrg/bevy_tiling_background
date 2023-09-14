@@ -149,6 +149,9 @@ pub trait ScrollingBackground {
 pub struct BackgroundMaterial {
     #[uniform(0)]
     pub movement_scale: f32,
+    /// webgl2 requires 16 byte alignment
+    #[uniform(0)]
+    pub _wasm_padding: Vec3,
     /// This image must have its [`SamplerDescriptor`] address_mode_* fields set to
     /// [`AddressMode::Repeat`].
     #[texture(1)]
@@ -302,6 +305,7 @@ impl BackgroundImageBundle {
             material: background_materials.add(BackgroundMaterial {
                 texture: image,
                 movement_scale: 1.0,
+                _wasm_padding: Vec3::ZERO,
             }),
             mesh: BG_MESH_HANDLE.typed().into(),
             transform: Default::default(),

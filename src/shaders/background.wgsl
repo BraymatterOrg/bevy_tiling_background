@@ -5,6 +5,8 @@
 #import braymatter::bglib scroll
 struct Uniforms {
     scale: f32,
+    // webgl2 requires 16 byte alignment
+    _wasm_padding: vec3<f32>
 };
 
 @group(1) @binding(0)
