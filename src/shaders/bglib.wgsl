@@ -1,7 +1,7 @@
 #define_import_path braymatter::bglib
 
 fn scroll(
-    text: texture_2d<f32>,
+    tex: texture_2d<f32>,
     texture_sampler: sampler,
     scale: f32,
     uv: vec2<f32>,
@@ -14,6 +14,6 @@ fn scroll(
     let tex_dim = textureDimensions(tex);
 
     uv = uv * ( viewport_size / vec2<f32>(tex_dim) );
-    let color = textureSample(text, texture_sampler, uv);
+    let color = textureSample(tex, texture_sampler, uv);
     return color;
 }
