@@ -1,8 +1,8 @@
-#import bevy_core_pipeline::fullscreen_vertex_shader FullscreenVertexOutput
-#import bevy_sprite::mesh2d_view_bindings view
+#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
+#import bevy_sprite::mesh2d_view_bindings::view
 #import bevy_sprite::mesh2d_bindings
-#import bevy_sprite::mesh2d_functions mesh2d_position_world_to_clip
-#import braymatter::bglib scroll
+#import bevy_sprite::mesh2d_functions::mesh2d_position_world_to_clip
+#import braymatter::bglib::scroll
 struct Uniforms {
     scale: f32,
     // webgl2 requires 16 byte alignment
