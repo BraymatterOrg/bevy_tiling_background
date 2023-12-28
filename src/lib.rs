@@ -7,24 +7,19 @@ use bevy::asset::{load_internal_asset, LoadState};
 use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
 use bevy::ecs::system::Command;
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
 use bevy::render::mesh::MeshVertexBufferLayout;
 use bevy::render::render_resource::{
-    AddressMode, AsBindGroup, PrimitiveState, RenderPipelineDescriptor, SamplerDescriptor,
-    ShaderRef, SpecializedMeshPipelineError,
+    AsBindGroup, PrimitiveState, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
 };
-use bevy::render::texture::ImageSampler;
+use bevy::render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::sprite::{Material2d, Material2dKey, Material2dPlugin, Mesh2dHandle};
 use bevy::window::{PrimaryWindow, WindowResized};
 
-pub const TILED_BG_SHADER_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423978);
+pub const TILED_BG_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(429593476423978);
 
-pub const BGLIB_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 429593476423988);
+pub const BGLIB_HANDLE: Handle<Shader> = Handle::weak_from_u128(429593476423988);
 
-pub const BG_MESH_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Mesh::TYPE_UUID, 12316584166263728426);
+pub const BG_MESH_HANDLE: Handle<Mesh> = Handle::weak_from_u128(12316584166263728426);
 
 /// Prevent shaders from being loaded multiple times, emitting events etc.
 pub static BEVY_TILING_PLUGIN_SHADERS_LOADED: Once = Once::new();
@@ -41,7 +36,7 @@ fn load_plugin_shadercode(app: &mut App) {
 
     // This is doing the same thing as `load_internal_asset` just not from a file.
     let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-    meshes.set_untracked(
+    meshes.insert(
         BG_MESH_HANDLE,
         Mesh::from(shape::Quad {
             size: Vec2 { x: 1., y: 1. },
@@ -53,10 +48,8 @@ fn load_plugin_shadercode(app: &mut App) {
 /// Bevy plugin for tiling backgrounds.
 ///
 /// Insert after Bevy's DefaultPlugins.
-#[derive(Default, TypeUuid)]
-#[uuid = "14268b6c-927e-41e3-affe-410e7609a3fa"]
-pub struct TilingBackgroundPlugin<T: AsBindGroup + Send + Sync + Clone + TypeUuid + Sized + 'static>
-{
+#[derive(Default)]
+pub struct TilingBackgroundPlugin<T: AsBindGroup + Send + Sync + Clone + Asset + Sized + 'static> {
     _phantom: PhantomData<T>,
 }
 
@@ -95,7 +88,7 @@ where
         mut events: EventReader<WindowResized>,
         mut backgrounds: Query<&mut Transform, With<Handle<T>>>,
     ) {
-        events.iter().for_each(|ev| {
+        events.read().for_each(|ev| {
             for mut transform in backgrounds.iter_mut() {
                 transform.scale.x = ev.width;
                 transform.scale.y = ev.height;
@@ -144,8 +137,7 @@ pub trait ScrollingBackground {
     fn set_movement(&mut self, movement: f32);
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid, Default, Reflect)]
-#[uuid = "4e31d7bf-a3f5-4a62-a86f-1e61a21076db"]
+#[derive(AsBindGroup, Debug, Clone, Asset, TypePath, Default)]
 pub struct BackgroundMaterial {
     #[uniform(0)]
     pub movement_scale: f32,
@@ -161,10 +153,10 @@ pub struct BackgroundMaterial {
 
 impl Material2d for BackgroundMaterial {
     fn vertex_shader() -> ShaderRef {
-        FULLSCREEN_SHADER_HANDLE.typed().into()
+        FULLSCREEN_SHADER_HANDLE.into()
     }
     fn fragment_shader() -> ShaderRef {
-        TILED_BG_SHADER_HANDLE.typed().into()
+        TILED_BG_SHADER_HANDLE.into()
     }
 
     fn specialize(
@@ -209,25 +201,25 @@ fn update_sampler_on_loaded_system(
         .collect::<Vec<_>>();
     for (index, handle) in handles {
         match asset_server.get_load_state(&handle) {
-            LoadState::Failed => {
+            Some(LoadState::Failed) => {
                 // Failed to load, don't need to keep checking it
                 update_sampler.0.remove(index);
             }
-            LoadState::Loaded => {
+            Some(LoadState::Loaded) => {
                 let bg_texture = images
                     .get_mut(&handle)
                     .expect("the image should be loaded at this point");
 
                 // If it already has a custom descriptor, update it otherwise create our own.
-                if let ImageSampler::Descriptor(descriptor) = &mut bg_texture.sampler_descriptor {
-                    descriptor.address_mode_u = AddressMode::Repeat;
-                    descriptor.address_mode_v = AddressMode::Repeat;
-                    descriptor.address_mode_w = AddressMode::Repeat;
+                if let ImageSampler::Descriptor(descriptor) = &mut bg_texture.sampler {
+                    descriptor.address_mode_u = ImageAddressMode::Repeat;
+                    descriptor.address_mode_v = ImageAddressMode::Repeat;
+                    descriptor.address_mode_w = ImageAddressMode::Repeat;
                 } else {
-                    bg_texture.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
-                        address_mode_u: AddressMode::Repeat,
-                        address_mode_v: AddressMode::Repeat,
-                        address_mode_w: AddressMode::Repeat,
+                    bg_texture.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+                        address_mode_u: ImageAddressMode::Repeat,
+                        address_mode_v: ImageAddressMode::Repeat,
+                        address_mode_w: ImageAddressMode::Repeat,
                         ..default()
                     });
                 }
@@ -268,7 +260,8 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub view_visibility: ViewVisibility,
+    pub inherited_visibility: InheritedVisibility,
     pub movement_scale: BackgroundMovementScale,
 }
 
@@ -276,11 +269,12 @@ impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
     pub fn with_material(material: T, materials: &mut Assets<T>) -> Self {
         Self {
             material: materials.add(material),
-            mesh: BG_MESH_HANDLE.typed().into(),
+            mesh: BG_MESH_HANDLE.into(),
             transform: Default::default(),
             global_transform: Default::default(),
             visibility: Default::default(),
-            computed_visibility: Default::default(),
+            view_visibility: Default::default(),
+            inherited_visibility: Default::default(),
             movement_scale: Default::default(),
         }
     }
@@ -292,7 +286,8 @@ pub struct BackgroundImageBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub view_visibility: ViewVisibility,
+    pub inherited_visibility: InheritedVisibility,
     pub movement_scale: BackgroundMovementScale,
 }
 
@@ -307,11 +302,12 @@ impl BackgroundImageBundle {
                 movement_scale: 1.0,
                 _wasm_padding: Vec3::ZERO,
             }),
-            mesh: BG_MESH_HANDLE.typed().into(),
+            mesh: BG_MESH_HANDLE.into(),
             transform: Default::default(),
             global_transform: Default::default(),
             visibility: Default::default(),
-            computed_visibility: Default::default(),
+            view_visibility: Default::default(),
+            inherited_visibility: Default::default(),
             movement_scale: Default::default(),
         }
     }

@@ -6,7 +6,7 @@ use bevy::render::render_resource::{
 use bevy::sprite::Material2dKey;
 use bevy::{
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::Material2d,
 };
@@ -120,8 +120,7 @@ fn movement(
     }
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid, TypePath, Default)]
-#[uuid = "09756d79-32e9-4dc4-bb95-b373370815e3"]
+#[derive(AsBindGroup, Debug, Clone, Asset, TypePath, Default)]
 pub struct CustomMaterial {
     #[uniform(0)]
     pub movement_scale: f32,
@@ -137,7 +136,7 @@ pub struct CustomMaterial {
 
 impl Material2d for CustomMaterial {
     fn vertex_shader() -> ShaderRef {
-        FULLSCREEN_SHADER_HANDLE.typed().into()
+        FULLSCREEN_SHADER_HANDLE.into()
     }
     fn fragment_shader() -> ShaderRef {
         "custombg.wgsl".into()
