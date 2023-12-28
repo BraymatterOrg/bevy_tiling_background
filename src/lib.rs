@@ -12,6 +12,7 @@ use bevy::render::render_resource::{
     AsBindGroup, PrimitiveState, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
 };
 use bevy::render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::render::view::NoFrustumCulling;
 use bevy::sprite::{Material2d, Material2dKey, Material2dPlugin, Mesh2dHandle};
 use bevy::window::{PrimaryWindow, WindowResized};
 
@@ -263,6 +264,7 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
     pub view_visibility: ViewVisibility,
     pub inherited_visibility: InheritedVisibility,
     pub movement_scale: BackgroundMovementScale,
+    pub no_frustum_culling: NoFrustumCulling,
 }
 
 impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
@@ -276,6 +278,7 @@ impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
             view_visibility: Default::default(),
             inherited_visibility: Default::default(),
             movement_scale: Default::default(),
+            no_frustum_culling: Default::default(),
         }
     }
 }
@@ -289,6 +292,7 @@ pub struct BackgroundImageBundle {
     pub view_visibility: ViewVisibility,
     pub inherited_visibility: InheritedVisibility,
     pub movement_scale: BackgroundMovementScale,
+    pub no_frustum_culling: NoFrustumCulling,
 }
 
 impl BackgroundImageBundle {
@@ -309,6 +313,7 @@ impl BackgroundImageBundle {
             view_visibility: Default::default(),
             inherited_visibility: Default::default(),
             movement_scale: Default::default(),
+            no_frustum_culling: Default::default(),
         }
     }
 
