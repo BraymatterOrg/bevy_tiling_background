@@ -9,11 +9,11 @@ struct Uniforms {
     _wasm_padding: vec3<f32>
 };
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> uniforms: Uniforms;
-@group(1) @binding(1)
+@group(2) @binding(1)
 var texture: texture_2d<f32>;
-@group(1) @binding(2)
+@group(2) @binding(2)
 var texture_sampler: sampler;
 
 @fragment
