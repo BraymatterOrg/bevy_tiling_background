@@ -76,29 +76,29 @@ struct Instructions;
 fn movement(
     mut camera: Query<&mut Transform, With<Camera>>,
     mut background_scales: Query<&mut BackgroundMovementScale>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
     let move_speed = 100.0;
     let mut camera_transform = camera.single_mut();
-    if input.pressed(KeyCode::Left) {
+    if input.pressed(KeyCode::ArrowLeft) {
         camera_transform.translation.x -= time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Right) {
+    if input.pressed(KeyCode::ArrowRight) {
         camera_transform.translation.x += time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Down) {
+    if input.pressed(KeyCode::ArrowDown) {
         camera_transform.translation.y -= time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Up) {
+    if input.pressed(KeyCode::ArrowUp) {
         camera_transform.translation.y += time.delta_seconds() * move_speed;
     }
 
     for mut background_scale in background_scales.iter_mut() {
-        if input.pressed(KeyCode::Plus) || input.pressed(KeyCode::NumpadAdd) {
+        if input.pressed(KeyCode::Equal) || input.pressed(KeyCode::NumpadAdd) {
             background_scale.scale += time.delta_seconds();
         }
 

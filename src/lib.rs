@@ -37,13 +37,7 @@ fn load_plugin_shadercode(app: &mut App) {
 
     // This is doing the same thing as `load_internal_asset` just not from a file.
     let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-    meshes.insert(
-        BG_MESH_HANDLE,
-        Mesh::from(shape::Quad {
-            size: Vec2 { x: 1., y: 1. },
-            ..default()
-        }),
-    );
+    meshes.insert(BG_MESH_HANDLE, Mesh::from(Rectangle::new(1., 1.)));
 }
 
 /// Bevy plugin for tiling backgrounds.

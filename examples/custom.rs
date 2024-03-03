@@ -98,24 +98,24 @@ pub fn setup(
 struct Instructions;
 fn movement(
     mut camera: Query<&mut Transform, With<Camera>>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
     let move_speed = 100.0;
     let mut camera_transform = camera.single_mut();
-    if input.pressed(KeyCode::Left) {
+    if input.pressed(KeyCode::ArrowLeft) {
         camera_transform.translation.x -= time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Right) {
+    if input.pressed(KeyCode::ArrowRight) {
         camera_transform.translation.x += time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Down) {
+    if input.pressed(KeyCode::ArrowDown) {
         camera_transform.translation.y -= time.delta_seconds() * move_speed;
     }
 
-    if input.pressed(KeyCode::Up) {
+    if input.pressed(KeyCode::ArrowUp) {
         camera_transform.translation.y += time.delta_seconds() * move_speed;
     }
 }
