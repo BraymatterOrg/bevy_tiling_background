@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css, prelude::*};
 use bevy_tiling_background::{
     BackgroundImageBundle, BackgroundMaterial, BackgroundMovementScale, SetImageRepeatingExt,
     TilingBackgroundPlugin,
@@ -12,7 +12,7 @@ pub fn main() {
         .add_systems(Update, movement)
         .add_systems(Update, update_instructions)
         .add_systems(PostUpdate, update_movement_scale_system)
-        .run()
+        .run();
 }
 
 pub fn setup(
@@ -34,7 +34,6 @@ pub fn setup(
             "Arrow keys to move\n\
         +/- for Parallax effect",
             TextStyle {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                 font_size: 32.0,
                 ..default()
             },
@@ -47,7 +46,7 @@ pub fn setup(
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::DARK_GREEN,
+                color: Srgba::rgb(0.0, 0.5, 0.0).into(),
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
@@ -59,7 +58,7 @@ pub fn setup(
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::RED,
+                color: css::RED.into(),
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))

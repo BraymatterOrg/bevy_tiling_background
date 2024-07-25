@@ -10,7 +10,7 @@ pub fn main() {
         .add_plugins(TilingBackgroundPlugin::<BackgroundMaterial>::default())
         .add_systems(Startup, setup)
         .add_systems(Update, movement)
-        .run()
+        .run();
 }
 
 pub fn setup(
@@ -42,7 +42,6 @@ pub fn setup(
         TextBundle::from_section(
             "Arrow keys to move\n",
             TextStyle {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                 font_size: 32.0,
                 ..default()
             },
