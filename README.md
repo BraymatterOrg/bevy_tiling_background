@@ -12,6 +12,7 @@ The scrolling function is exposed as a shader import making it available for use
 
 | bevy | bevy_tiling_background |
 |------|------------------------|
+| 0.14 | 0.11                   |
 | 0.9  | 0.9                    |
 
 ## License
