@@ -13,12 +13,12 @@ homepage = "https://github.com/Braymatter/bevy_tiling_background"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.bevy]
-version = "0.13"
+version = "0.14"
 default-features = false
 features = ["bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_sprite"]
 
 [dev-dependencies.bevy]
-version = "0.13"
+version = "0.14"
 default-features = false
 features = [
     "bevy_asset",
@@ -28,6 +28,7 @@ features = [
     "bevy_winit",
     "bevy_text",
     "bevy_ui",
+    "multi_threaded",
     "png",
     "webgl2",
 ]

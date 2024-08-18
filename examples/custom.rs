@@ -1,10 +1,11 @@
 use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
-use bevy::render::mesh::MeshVertexBufferLayout;
+use bevy::render::mesh::MeshVertexBufferLayoutRef;
 use bevy::render::render_resource::{
     PrimitiveState, RenderPipelineDescriptor, SpecializedMeshPipelineError,
 };
 use bevy::sprite::Material2dKey;
 use bevy::{
+    color::palettes::css,
     prelude::*,
     reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
@@ -23,7 +24,7 @@ pub fn main() {
         .add_plugins(TilingBackgroundPlugin::<BackgroundMaterial>::default())
         .add_systems(Startup, setup)
         .add_systems(Update, movement)
-        .run()
+        .run();
 }
 
 pub fn setup(
@@ -39,7 +40,7 @@ pub fn setup(
     let custom_mat = CustomMaterial {
         movement_scale: -0.15,
         texture: image,
-        blend_color: Color::CRIMSON,
+        blend_color: css::CRIMSON.into(),
     };
 
     // Spawn Camera
@@ -58,7 +59,6 @@ pub fn setup(
         TextBundle::from_section(
             "Arrow keys to move",
             TextStyle {
-                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                 font_size: 32.0,
                 ..default()
             },
@@ -71,7 +71,7 @@ pub fn setup(
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::DARK_GREEN,
+                color: Srgba::rgb(0.0, 0.5, 0.0).into(),
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
@@ -83,7 +83,7 @@ pub fn setup(
     commands.spawn((
         SpriteBundle {
             sprite: Sprite {
-                color: Color::RED,
+                color: css::RED.into(),
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))
@@ -131,7 +131,7 @@ pub struct CustomMaterial {
     pub texture: Handle<Image>,
 
     #[uniform(0)]
-    pub blend_color: Color,
+    pub blend_color: LinearRgba,
 }
 
 impl Material2d for CustomMaterial {
@@ -144,7 +144,7 @@ impl Material2d for CustomMaterial {
 
     fn specialize(
         descriptor: &mut RenderPipelineDescriptor,
-        _: &MeshVertexBufferLayout,
+        _: &MeshVertexBufferLayoutRef,
         _: Material2dKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive = PrimitiveState::default();

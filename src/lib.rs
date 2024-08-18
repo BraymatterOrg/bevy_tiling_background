@@ -5,9 +5,9 @@ use std::sync::Once;
 use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
-use bevy::ecs::system::Command;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
-use bevy::render::mesh::MeshVertexBufferLayout;
+use bevy::render::mesh::MeshVertexBufferLayoutRef;
 use bevy::render::render_resource::{
     AsBindGroup, PrimitiveState, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
 };
@@ -36,8 +36,8 @@ fn load_plugin_shadercode(app: &mut App) {
     load_internal_asset!(app, BGLIB_HANDLE, "shaders/bglib.wgsl", Shader::from_wgsl);
 
     // This is doing the same thing as `load_internal_asset` just not from a file.
-    let mut meshes = app.world.resource_mut::<Assets<Mesh>>();
-    meshes.insert(BG_MESH_HANDLE, Mesh::from(Rectangle::new(1., 1.)));
+    let mut meshes = app.world_mut().resource_mut::<Assets<Mesh>>();
+    meshes.insert(&BG_MESH_HANDLE, Mesh::from(Rectangle::new(1., 1.)));
 }
 
 /// Bevy plugin for tiling backgrounds.
@@ -156,7 +156,7 @@ impl Material2d for BackgroundMaterial {
 
     fn specialize(
         descriptor: &mut RenderPipelineDescriptor,
-        _: &MeshVertexBufferLayout,
+        _: &MeshVertexBufferLayoutRef,
         _: Material2dKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive = PrimitiveState::default();
@@ -196,7 +196,7 @@ fn update_sampler_on_loaded_system(
         .collect::<Vec<_>>();
     for (index, handle) in handles {
         match asset_server.get_load_state(&handle) {
-            Some(LoadState::Failed) => {
+            Some(LoadState::Failed(_)) => {
                 // Failed to load, don't need to keep checking it
                 update_sampler.0.remove(index);
             }
