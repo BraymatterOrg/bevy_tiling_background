@@ -6,14 +6,14 @@ use bevy::app::{App, Plugin};
 use bevy::asset::{load_internal_asset, LoadState};
 use bevy::core_pipeline::fullscreen_vertex_shader::FULLSCREEN_SHADER_HANDLE;
 use bevy::ecs::world::Command;
+use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::mesh::MeshVertexBufferLayoutRef;
 use bevy::render::render_resource::{
     AsBindGroup, PrimitiveState, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
 };
-use bevy::render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::render::view::NoFrustumCulling;
-use bevy::sprite::{Material2d, Material2dKey, Material2dPlugin, Mesh2dHandle};
+use bevy::sprite::{AlphaMode2d, Material2d, Material2dKey, Material2dPlugin};
 use bevy::window::{PrimaryWindow, WindowResized};
 
 pub const TILED_BG_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(429593476423978);
@@ -81,7 +81,7 @@ where
 
     pub fn on_window_resize(
         mut events: EventReader<WindowResized>,
-        mut backgrounds: Query<&mut Transform, With<Handle<T>>>,
+        mut backgrounds: Query<&mut Transform, With<MeshMaterial2d<T>>>,
     ) {
         events.read().for_each(|ev| {
             for mut transform in backgrounds.iter_mut() {
@@ -93,7 +93,7 @@ where
 
     pub fn on_background_added(
         windows: Query<&Window, With<PrimaryWindow>>,
-        mut backgrounds: Query<&mut Transform, Added<Handle<T>>>,
+        mut backgrounds: Query<&mut Transform, Added<MeshMaterial2d<T>>>,
     ) {
         if let Ok(window) = windows.get_single() {
             for mut transform in backgrounds.iter_mut() {
@@ -104,17 +104,17 @@ where
     }
 
     fn queue_update_sampler(
-        query: Query<&Handle<Image>, Added<Handle<T>>>,
+        query: Query<&Sprite, Added<MeshMaterial2d<T>>>,
         mut update_samplers: ResMut<UpdateSamplerRepeating>,
     ) {
-        for handle in query.iter() {
-            update_samplers.0.push(handle.clone());
+        for sprite in query.iter() {
+            update_samplers.0.push(sprite.image.clone());
         }
     }
 
     pub fn update_movement_scale_system(
         mut query: Query<
-            (&mut Handle<T>, &BackgroundMovementScale),
+            (&mut MeshMaterial2d<T>, &BackgroundMovementScale),
             Changed<BackgroundMovementScale>,
         >,
         mut background_materials: ResMut<Assets<T>>,
@@ -152,6 +152,10 @@ impl Material2d for BackgroundMaterial {
     }
     fn fragment_shader() -> ShaderRef {
         TILED_BG_SHADER_HANDLE.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
     }
 
     fn specialize(
@@ -237,7 +241,7 @@ pub struct BackgroundMovementScale {
     ///
     /// - A scale of 0.0 the background will move with the camera.
     /// - A scale of 1.0 the background will move opposite the camera at the same speed as the camera,
-    /// making it stationary in the world.
+    ///   making it stationary in the world.
     /// - A scale of 2.0 the background will move twice as fast as the camera.
     pub scale: f32,
 }
@@ -250,8 +254,8 @@ impl Default for BackgroundMovementScale {
 
 #[derive(Bundle)]
 pub struct CustomBackgroundImageBundle<T: Material2d> {
-    pub material: Handle<T>,
-    pub mesh: Mesh2dHandle,
+    pub material: MeshMaterial2d<T>,
+    pub mesh: Mesh2d,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -264,7 +268,7 @@ pub struct CustomBackgroundImageBundle<T: Material2d> {
 impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
     pub fn with_material(material: T, materials: &mut Assets<T>) -> Self {
         Self {
-            material: materials.add(material),
+            material: materials.add(material).into(),
             mesh: BG_MESH_HANDLE.into(),
             transform: Default::default(),
             global_transform: Default::default(),
@@ -276,10 +280,11 @@ impl<T: Material2d + ScrollingBackground> CustomBackgroundImageBundle<T> {
         }
     }
 }
+
 #[derive(Bundle)]
 pub struct BackgroundImageBundle {
-    pub material: Handle<BackgroundMaterial>,
-    pub mesh: Mesh2dHandle,
+    pub material: MeshMaterial2d<BackgroundMaterial>,
+    pub mesh: Mesh2d,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -295,11 +300,13 @@ impl BackgroundImageBundle {
         background_materials: &mut Assets<BackgroundMaterial>,
     ) -> Self {
         Self {
-            material: background_materials.add(BackgroundMaterial {
-                texture: image,
-                movement_scale: 1.0,
-                _wasm_padding: Vec3::ZERO,
-            }),
+            material: background_materials
+                .add(BackgroundMaterial {
+                    texture: image,
+                    movement_scale: 1.0,
+                    _wasm_padding: Vec3::ZERO,
+                })
+                .into(),
             mesh: BG_MESH_HANDLE.into(),
             transform: Default::default(),
             global_transform: Default::default(),
@@ -337,10 +344,10 @@ pub trait SetImageRepeatingExt {
     fn set_image_repeating(&mut self, image: Handle<Image>);
 }
 
-impl<'w, 's> SetImageRepeatingExt for Commands<'w, 's> {
+impl SetImageRepeatingExt for Commands<'_, '_> {
     /// Queues this image to have it's [`SamplerDescriptor`] changed to be repeating once the
     /// image is loaded. This may take more than a frame to apply.
     fn set_image_repeating(&mut self, image: Handle<Image>) {
-        self.add(SetImageRepeatingCommand { image })
+        self.queue(SetImageRepeatingCommand { image })
     }
 }

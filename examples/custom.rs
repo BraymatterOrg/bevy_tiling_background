@@ -44,7 +44,7 @@ pub fn setup(
     };
 
     // Spawn Camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 
     // Spawn Background
     commands
@@ -56,40 +56,29 @@ pub fn setup(
 
     // Instructions
     commands.spawn((
-        TextBundle::from_section(
-            "Arrow keys to move",
-            TextStyle {
-                font_size: 32.0,
-                ..default()
-            },
-        ),
+        TextFont::from_font_size(32.0),
+        Text::new("Arrow keys to move"),
         Instructions,
         Name::new("Instructions"),
     ));
 
     // Boxes as a simple environment to compare background movement to.
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: Srgba::rgb(0.0, 0.5, 0.0).into(),
-                ..default()
-            },
-            transform: Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
-                .with_translation(Vec3::new(0.0, -50.0, 1.0)),
+        Sprite {
+            color: Srgba::rgb(0.0, 0.5, 0.0).into(),
             ..default()
         },
+        Transform::from_scale(Vec3::new(10000.0, 100.0, 1.0))
+            .with_translation(Vec3::new(0.0, -50.0, 1.0)),
         Name::new("Green Box (Ground)"),
     ));
     commands.spawn((
-        SpriteBundle {
-            sprite: Sprite {
-                color: css::RED.into(),
-                ..default()
-            },
-            transform: Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))
-                .with_translation(Vec3::new(0.0, 50.0, 1.0)),
+        Sprite {
+            color: css::RED.into(),
             ..default()
         },
+        Transform::from_scale(Vec3::new(100.0, 100.0, 1.0))
+            .with_translation(Vec3::new(0.0, 50.0, 1.0)),
         Name::new("Red Box"),
     ));
 }
@@ -104,19 +93,19 @@ fn movement(
     let move_speed = 100.0;
     let mut camera_transform = camera.single_mut();
     if input.pressed(KeyCode::ArrowLeft) {
-        camera_transform.translation.x -= time.delta_seconds() * move_speed;
+        camera_transform.translation.x -= time.delta_secs() * move_speed;
     }
 
     if input.pressed(KeyCode::ArrowRight) {
-        camera_transform.translation.x += time.delta_seconds() * move_speed;
+        camera_transform.translation.x += time.delta_secs() * move_speed;
     }
 
     if input.pressed(KeyCode::ArrowDown) {
-        camera_transform.translation.y -= time.delta_seconds() * move_speed;
+        camera_transform.translation.y -= time.delta_secs() * move_speed;
     }
 
     if input.pressed(KeyCode::ArrowUp) {
-        camera_transform.translation.y += time.delta_seconds() * move_speed;
+        camera_transform.translation.y += time.delta_secs() * move_speed;
     }
 }
 
