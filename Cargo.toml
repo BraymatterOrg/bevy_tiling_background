@@ -15,7 +15,7 @@ homepage = "https://github.com/Braymatter/bevy_tiling_background"
 [dependencies.bevy]
 version = "0.15"
 default-features = false
-features = ["bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_winit"]
+features = ["bevy_asset", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_winit", "x11", "wayland"]
 
 [dev-dependencies.bevy]
 version = "0.15"
@@ -30,4 +30,6 @@ features = [
     "multi_threaded",
     "png",
     "webgl2",
+    "x11",
+    "wayland",
 ]
